@@ -50,7 +50,7 @@ sympy==1.8
 tensorboard==2.10.1
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
-tensorflow==2.7.0
+tensorflow==2.11.1
 tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.27.0
 tensorflow-quantum==0.7.2
