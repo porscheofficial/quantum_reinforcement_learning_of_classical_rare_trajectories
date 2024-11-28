@@ -56,29 +56,27 @@ def build_OneQubit_quantum_circuit(state_dim, n_layers, noise):
 
             param_counter += 2
 
-    circuit + cirq.Circuit(cirq.depolarize(noise).on_each(*circuit.all_qubits()))
+    #circuit + cirq.Circuit(cirq.depolarize(noise).on_each(*circuit.all_qubits()))
 
     return circuit, qubit, inputs, variational_params
 
-
-
 def build_quantum_circuit(n_qubits, n_layers, noise):
-    """ Builds a PQC for learning.
+    """ Builds a PQC for learning with noisy rotations.
 
         Input
         -----
-        state_dim : int
-            dimension of environment state
+        n_qubits : int
+            number of qubits
         n_layers : int
             number of data re-uploading layers
         noise : float
-            noise rate
+            noise rate, applied as random angle perturbation
 
         Output
         ------
         circuit : cirq.Circuit
             quantum circuit
-        qubit : cirq.GridQubit.rect
+        qubits : cirq.GridQubit.rect
             qubits of quantum circuit
         inputs : sympy.symbols
             input data and input weights on the input data
@@ -88,48 +86,51 @@ def build_quantum_circuit(n_qubits, n_layers, noise):
 
     # Init circuit:
     circuit = cirq.Circuit()
-
-    # Init qubits:
+    
+    #Init qubits:
     qubits = cirq.GridQubit.rect(1, n_qubits)
 
-    # Inputs: input data and input weights on the input data
-    inputs = sympy.symbols(f"x_(0:{n_layers})"+f"_(0:{n_qubits})")
+    # Input symbols for data re-uploading
+    inputs = sympy.symbols(f"x_(0:{n_layers})" + f"_(0:{n_qubits})")
 
-    # Variational parameters: trainable parameters for single qubit rotations in circuit
+    # Variational parameters: trainable parameters for single-qubit rotations
     variational_params = sympy.symbols(f"theta(0:{2 * n_layers * n_qubits})")
-
+    
     param_counter = 0
 
-    # Add n_layers layers to circuit, consisting of single qubit rotations on each qubit and an entangling layer on all qubits:
+    # Add n_layers to the circuit , consisting of single qubit rotations on each qubit and an entangling layer on all qubits:
     for l in range(n_layers):
 
         # Add single qubit rotation gates to each qubit:
         for q in range(n_qubits):
+            if noise > 0:
+                # Noisy Rx
+                noise_rx = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.rx(inputs[q + l * n_qubits] * noise_rx)(qubits[q]))
 
-            circuit.append(cirq.rx(inputs[q+l*n_qubits])(qubits[q]))
+                # Noisy Ry
+                noise_ry = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.ry(variational_params[param_counter] * noise_ry)(qubits[q]))
 
-            circuit.append(cirq.ry(variational_params[param_counter])(qubits[q]))
-            circuit.append(cirq.rz(variational_params[param_counter+1])(qubits[q]))
+                # Noisy Rz
+                noise_rz = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.rz(variational_params[param_counter + 1] * noise_rz)(qubits[q]))
+                
+            else:
+                circuit.append(cirq.rx(inputs[q + l * n_qubits])(qubits[q]))
+                circuit.append(cirq.ry(variational_params[param_counter])(qubits[q]))
+                circuit.append(cirq.rz(variational_params[param_counter + 1])(qubits[q]))
 
             param_counter += 2
 
         # Add entangling layer, circular arrangement of cz gates:
         for q in range(n_qubits):
-
-            if (q == (n_qubits-1)) and (n_qubits != 2):
+            if (q == (n_qubits - 1)) and (n_qubits != 2):
                 circuit.append(cirq.CZ(qubits[q], qubits[0]))
-
-            elif (q == (n_qubits-1)) and (n_qubits == 2):
-                pass
-
-            else:
-                circuit.append(cirq.CZ(qubits[q], qubits[q+1]))
-
-    circuit + cirq.Circuit(cirq.depolarize(noise).on_each(*circuit.all_qubits()))
-
+            elif (q != (n_qubits - 1)):
+                circuit.append(cirq.CZ(qubits[q], qubits[q + 1]))
+    print(circuit)
     return circuit, qubits, inputs, variational_params
-
-
 
 class ReUploadingPQC(tf.keras.layers.Layer):
 
