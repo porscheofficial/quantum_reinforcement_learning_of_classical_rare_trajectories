@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from tensorflow.keras import backend as K
 
 
 def sinAct(x):
@@ -32,8 +32,8 @@ class model_Actor_NN(tf.keras.Model):
 
     def __init__(self, n_param1, n_param2, n_actions):
         super().__init__()
-        self.d1 = tf.keras.layers.Dense(n_param1,activation="relu")
-        self.d2 = tf.keras.layers.Dense(n_param2,activation="relu")
+        self.d1 = tf.keras.layers.Dense(n_param1,activation=sinAct)
+        self.d2 = tf.keras.layers.Dense(n_param2,activation=sinAct)
         self.out = tf.keras.layers.Dense(n_actions, activation = "softmax")
 
     def call(self, inputs):
