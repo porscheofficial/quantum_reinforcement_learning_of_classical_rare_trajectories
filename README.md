@@ -3,7 +3,20 @@ Quantum Reinforcement Learning of Classical Rare Trajectories
 This repository contains the code used to generate the results of the following publication (ToDo:add link to paper). The code includes four different reinforcement learning implementations to learn rare dynamics of the random walker model.
 
 ## Abstract
-Rare events are crucial essential for understanding the behavior of systems like non-equilibrium and industrial systems. The effective search for such rare dynamics is frequently the subject of research. To this end, specific methods are required for generating rare events and sampling their statistics in an automated and statistically meaningful way. With the advent of quantum computing and its potential advantages over classical computing for certain applications, the question arises whether quantum computers could also provide an advantage in the generation of rare dynamics. In this article, we propose approaches to quantum reinforcement learning (QRL) for studying rare dynamics of time-dependent systems and  investigate their benefits over classical approaches based on neural networks. We make use of variational quantum algorithms, which are currently a prominent method for making use of state-of-the-art noisy intermediate-scale quantum computers. We demonstrate that our QRL framework can learn and generate the rare dynamics of random walks. Furthermore, we are able to show better learning behavior with fewer parameters compared to the classical approaches. This is the first investigation of QRL applied to the statistics of rare events and suggests that QRL is a viable method to study rare dynamics.
+Rare events are essential for understanding the behavior of non-equilibrium and industrial
+systems. It is an open problem to effectively search for such rare events. To this end, specific
+methods are required for generating rare events and sampling their statistics in an automated and
+statistically meaningful way. With the advent of quantum computing and its potential advantages
+over classical computing for applications like sampling certain probability distributions, the
+question arises whether quantum computers could also provide an advantage or inspire new
+methods for sampling the statistics of rare events. In this article, we propose several quantum
+reinforcement learning (QRL) methods for studying rare dynamics and investigate their benefits
+over classical approaches based on neural networks. As paradigmatic example, we demonstrate
+that our QRL agents can learn and generate the rare dynamics of random walks, and we are
+able to explain this success as well as the different contributing factors to it. Furthermore, we
+show better learning behavior with fewer parameters compared to classical approaches. This
+is the first investigation of QRL applied to generating rare events and suggests that QRL is a
+promising method to study their dynamics and statistics.
 
 ## Installation
 To run this code with all its packages you will need to use Python version 3.7. The TensorFlow and TensorFlow Quantum packages are required to run this code. See the installation commands below.\
@@ -41,12 +54,22 @@ The other scripts provide the functions for building the reinforcement learning 
 * learn.py: contains the classes and functions for learning the rare dynamics of a random walker with either a policy gradient or an actor-critic approach.
 * plot.py: contains all functions for generating the plots.
 
+## Contributing
+
+Contributions are highly appreciated. See CONTRIBUTING_LICENCE_AGREEMENT.md on how to get started.
+
+If you have any feedback or want to propose a new feature, please open an issue. 😊
+
+
 ## Authors and acknowledgment
 
-Laura Ohff
+Laura Ohff, Alissa Wilms
 
-Alissa Wilms
+The origin of this project is part of the Quantum research of Porsche Digital and the BMBF (HYBRID). ✨
 
 ## License
 
 See [LICENSE](./LICENSE.md).
+
+## Disclaimer
+* This repository is based on Tensorflow 2.7.0 and other pinned dependencies that contain vulnerabilities. To ensure the reproducibility of the results in the published paper, these dependencies are not updated. We therefore ask you to use this scientific software with caution and not in productive environments.
