@@ -58,7 +58,13 @@ pg_return_per_episode_trained, rare_dif_counts_trained = learn.generate_trajecto
 
 
 # Save implementation data
-header = ["Implementation", "T", "X", "RW probs", "Episode count", "s", "b", "beta", "Batch size", "Param Count Layer 1", "Param Count Layer 2", "Parameter count total", "Returns per episode", "Avarage returns per batch", "Rare trajectories per batch", "Returns per episode after training", "Count of different rare trajectories learning", "Count of different rare trajectories generated", "Actor loss"]
+header = [
+    "Implementation", "T", "X", "RW probs", "Episode count", "s", "b", "beta", 
+    "Batch size", "Param Count Layer 1", "Param Count Layer 2", "Parameter count total", 
+    "Returns per episode", "Avarage returns per batch", "Rare trajectories per batch", 
+    "Returns per episode after training", "Count of different rare trajectories learning", 
+    "Count of different rare trajectories generated", "Actor loss"
+]
 data = []
 
 pg_trainableParams = np.sum([np.prod(v.get_shape()) for v in pg_model["actor"].trainable_weights])
@@ -66,7 +72,15 @@ pg_nonTrainableParams = np.sum([np.prod(v.get_shape()) for v in pg_model["actor"
 
 pg_param_count = pg_trainableParams + pg_nonTrainableParams
 
-data.append(["PG", config.get("environment","T"), config.get("environment","X"), config.get("random_walker","rw_probs"), config.get("episodes","episodes"), config.get("reward","s"), config.get("reward","b"), config.get("actor_learning_rates","beta"), config.get("episodes","batch_size"),  config.get("actor_network","n_param1"), config.get("actor_network","n_param2"), pg_param_count, pg_return_per_episode, pg_batch_avg, pg_batch_rare_count, pg_return_per_episode_trained, rare_dif_counts, rare_dif_counts_trained, loss.actor_loss])
+data.append([
+    "PG", config.get("environment","T"), config.get("environment","X"), 
+    config.get("random_walker","rw_probs"), config.get("episodes","episodes"), 
+    config.get("reward","s"), config.get("reward","b"), config.get("actor_learning_rates","beta"), 
+    config.get("episodes","batch_size"), config.get("actor_network","n_param1"), 
+    config.get("actor_network","n_param2"), pg_param_count, pg_return_per_episode, 
+    pg_batch_avg, pg_batch_rare_count, pg_return_per_episode_trained, rare_dif_counts, 
+    rare_dif_counts_trained, loss.actor_loss
+])
 
 data_csv = pd.DataFrame(data, columns=header)
 data_csv.to_csv(csv_path_model+"/Implementation_data.csv", index=False)

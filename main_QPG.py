@@ -64,7 +64,16 @@ return_per_episode_trained, rare_dif_counts_trained = learn.generate_trajectorie
 
 
 # Save implementation data
-header = ["Implementation", "T", "X", "RW probs", "b", "s", "Episode count", "Batch size", "Actor layer count ", "Actor qubit count", "Actor noise", "Beta", "Learning rates actor (input, variational, output)", "Actor parameter count", "Returns per episode", "Returns per batch", "Rare trajectories per batch", "Returns per episode after training", "Count of different rare trajectories during learning", "Count of different rare trajectories generated after learning", "Actor loss"]
+header = [
+    "Implementation", "T", "X", "RW probs", "b", "s", "Episode count", 
+    "Batch size", "Actor layer count ", "Actor qubit count", "Actor noise", 
+    "Beta", "Learning rates actor (input, variational, output)", 
+    "Actor parameter count", "Returns per episode", "Returns per batch", 
+    "Rare trajectories per batch", "Returns per episode after training", 
+    "Count of different rare trajectories during learning", 
+    "Count of different rare trajectories generated after learning", 
+    "Actor loss"
+]
 data = []
 
 pg_trainableParams = np.sum([np.prod(v.get_shape()) for v in pg_model["actor"].trainable_weights])
@@ -72,7 +81,22 @@ pg_nonTrainableParams = np.sum([np.prod(v.get_shape()) for v in pg_model["actor"
 
 param_count = pg_trainableParams + pg_nonTrainableParams
 
-data.append([config.get("agent","rl_class"), config.get("environment","T"), config.get("environment","X"), config.get("random_walker","rw_probs"), config.get("reward","b"), config.get("reward","s"), config.get("episodes","episodes"), config.get("episodes","batch_size"), config.get("actor_circuit","layers"), config.get("actor_circuit","qubits"), config.get("actor_circuit","noise"), config.get("actor_learning_rates","beta"), [config.get("actor_learning_rates","a_in"), config.get("actor_learning_rates","a_var"), config.get("actor_learning_rates","a_out")], param_count, return_per_episode, batch_avg, batch_rare_count, return_per_episode_trained, rare_dif_counts, rare_dif_counts_trained, loss.actor_loss])
+data.append([
+    config.get("agent","rl_class"), config.get("environment","T"), 
+    config.get("environment","X"), config.get("random_walker","rw_probs"), 
+    config.get("reward","b"), config.get("reward","s"), 
+    config.get("episodes","episodes"), config.get("episodes","batch_size"), 
+    config.get("actor_circuit","layers"), config.get("actor_circuit","qubits"), 
+    config.get("actor_circuit","noise"), config.get("actor_learning_rates","beta"), 
+    [
+        config.get("actor_learning_rates","a_in"), 
+        config.get("actor_learning_rates","a_var"), 
+        config.get("actor_learning_rates","a_out")
+    ], 
+    param_count, return_per_episode, batch_avg, batch_rare_count, 
+    return_per_episode_trained, rare_dif_counts, rare_dif_counts_trained, 
+    loss.actor_loss
+])
 
 data_csv = pd.DataFrame(data, columns=header)
 data_csv.to_csv(csv_path_model+"/Implementation_data.csv", index=False)

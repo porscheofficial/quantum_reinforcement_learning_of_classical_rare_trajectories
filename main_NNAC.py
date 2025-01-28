@@ -62,7 +62,14 @@ ac_return_per_episode_trained, rare_dif_counts_trained  = learn.generate_traject
 
 
 # Save implementation data
-header = ["Implementation", "T", "X", "RW probs", "b", "s", "Episode count", "Batch size", "Actor neurons in hidden layers", "Actor learning rate", "Actor parameter count", "Critic neurons in hidden layers", "Critic learning rate", "Critic parameter count", "Returns per episode", "Returns per batch", "Rare trajectories per batch", "Returns per episode after training", "Count of different rare trajectories during learning", "Count of different rare trajectories generated after learning", "Actor loss", "Critic loss"]
+header = [
+    "Implementation", "T", "X", "RW probs", "b", "s", "Episode count", "Batch size", 
+    "Actor neurons in hidden layers", "Actor learning rate", "Actor parameter count", 
+    "Critic neurons in hidden layers", "Critic learning rate", "Critic parameter count", 
+    "Returns per episode", "Returns per batch", "Rare trajectories per batch", 
+    "Returns per episode after training", "Count of different rare trajectories during learning", 
+    "Count of different rare trajectories generated after learning", "Actor loss", "Critic loss"
+]
 data = []
 
 a_trainableParams = np.sum([np.prod(v.get_shape()) for v in ac_model["actor"].trainable_weights])
@@ -74,7 +81,21 @@ c_nonTrainableParams = np.sum([np.prod(v.get_shape()) for v in ac_model["critic"
 param_count_a = a_trainableParams + a_nonTrainableParams
 param_count_c = c_trainableParams + c_nonTrainableParams
 
-data.append([config.get("agent","rl_class"), config.get("environment","T"), config.get("environment","X"), config.get("random_walker","rw_probs"), config.get("reward","b"), config.get("reward","s"), config.get("episodes","episodes"), config.get("episodes","batch_size"), [config.get("actor_network","n_param1"), config.get("actor_network","n_param2")], config.get("actor_learning_rates","beta"), param_count_a,[config.get("critic_network","n_param1"), config.get("critic_network","n_param2")], config.get("critic_learning_rates","alpha"), param_count_c, ac_return_per_episode, ac_batch_avg, ac_batch_rare_count, ac_return_per_episode_trained, rare_dif_counts, rare_dif_counts_trained, losses.actor_loss, losses.critic_loss])
+data.append([
+    config.get("agent","rl_class"), config.get("environment","T"), config.get("environment","X"), 
+    config.get("random_walker","rw_probs"), config.get("reward","b"), config.get("reward","s"), 
+    config.get("episodes","episodes"), config.get("episodes","batch_size"), 
+    [
+        config.get("actor_network","n_param1"), config.get("actor_network","n_param2")
+    ], 
+    config.get("actor_learning_rates","beta"), param_count_a, 
+    [
+        config.get("critic_network","n_param1"), config.get("critic_network","n_param2")
+    ], 
+    config.get("critic_learning_rates","alpha"), param_count_c, ac_return_per_episode, 
+    ac_batch_avg, ac_batch_rare_count, ac_return_per_episode_trained, rare_dif_counts, 
+    rare_dif_counts_trained, losses.actor_loss, losses.critic_loss
+])
 
 data_csv = pd.DataFrame(data, columns=header)
 data_csv.to_csv(csv_path_model+"/AC_Implementation_Data.csv", index=False)
