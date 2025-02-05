@@ -10,6 +10,7 @@ from scipy.interpolate import griddata
 import learn
 
 ### CONSTANTS ###
+# global settings
 global_size = 18
 font_size = 18
 
@@ -51,7 +52,7 @@ def interpolate_array(array):
     y1 = yy[~array.mask]
     newarr = array[~array.mask]
 
-    array_interpl = griddata((x1, y1), newarr.ravel(), (xx, yy), method="linear")
+    array_interpl = griddata((x1, y1), newarr.ravel(),(xx, yy),method="linear")
 
     return array_interpl
 
@@ -63,7 +64,7 @@ def map_index(x, T):
         Input
         -----
         x : int
-            x position of an environment state
+            x position of a environment state
         T : int
             final endtime for trajectory
 
@@ -80,38 +81,6 @@ def map_index(x, T):
 
 
 
-def save_plot(path, name, title, xlabel, ylabel, figure_num=0):
-    """Helper function to save a plot."""
-    pylab.xlabel(xlabel)
-    pylab.ylabel(ylabel)
-    pylab.title(title)
-    pylab.savefig(os.path.join(path, f"Plots/{name} {title}.png"), bbox_inches="tight")
-    pylab.close(figure_num)
-
-def plot_data(path, name, data, xlabel, ylabel, title, color=color_lines):
-    """Helper function to plot data."""
-    pylab.figure(0)
-    pylab.plot(data, color=color)
-    save_plot(path, name, title, xlabel, ylabel)
-
-def plot_image(path, name, array, extent, cmap, xlabel, ylabel, title, figure_num=0, interpolation=None):
-    """Helper function to plot an image."""
-    plt.figure(figure_num)
-    plt.imshow(array, cmap=cmap, extent=extent, aspect="auto", interpolation=interpolation)
-    plt.colorbar()
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.savefig(os.path.join(path, f"{name} {title}.png"), bbox_inches="tight")
-    plt.close(figure_num)
-
-def plot_and_save(path, name, data, xlabel, ylabel, title, color=color_lines, legend_elements=None):
-    """Helper function to plot data and save the plot."""
-    pylab.figure(0)
-    pylab.plot(data, color=color)
-    if legend_elements:
-        pylab.legend(loc="upper left", handles=legend_elements)
-    save_plot(path, name, title, xlabel, ylabel)
-
 def plot_final_policy(path, name, T, actor, agent_type):
     """Plot the policy of a trained model.
 
@@ -126,7 +95,7 @@ def plot_final_policy(path, name, T, actor, agent_type):
         actor : tf.keras.Model
             reinforcement learning model for policy
         agent_type : str
-            information whether the agent is a quantum or a NN agent
+            information wether the agent is a quantum or a NN agent
     """
 
     header = ["t", "x","probability of action_0", "probability of action_1"]
@@ -171,7 +140,7 @@ def plot_final_policy(path, name, T, actor, agent_type):
                 data.append([t,x, policy[0], policy[1]])
 
     data_csv = pd.DataFrame(data, columns=header)
-    data_csv.to_csv(os.path.join(path, f"{name} Final policy probabilities.csv"), index=False)
+    data_csv.to_csv(path+"/"+name+" Final policy probabilities.csv", index=False)
 
     extent =  0, T, -T, T
 
@@ -180,11 +149,27 @@ def plot_final_policy(path, name, T, actor, agent_type):
         array0 = np.delete(array0,-1,0)
 
     extent =  0, T, -int(T/2), int(T/2)
-    plot_image(path, name, array0, extent, "viridis", "t", "x", "Half Probability of action 0 (going down)")
+    plt.figure(0)
+    plt.imshow(array0, cmap="viridis", extent=extent,aspect="auto")
+    plt.colorbar()
+    plt.xlabel("t")
+    plt.ylabel("x")
+    plt.savefig(path+"/"+name+" Half Probability of action 0 (going down).png", bbox_inches="tight")
+    plt.close(0)
+
     array2 = interpolate_array(array0)
-    plot_image(path, name, array2, extent, "viridis", "t", "x", "Half Probability of action 0 (going down) Interpolated", 2, "bilinear")
+
+    plt.figure(2)
+    plt.imshow(array2, cmap="viridis", extent=extent, interpolation= "bilinear",aspect="auto")
+    plt.colorbar()
+    plt.xlabel("t")
+    plt.ylabel("x")
+    plt.savefig(path+"/"+name+" Half Probability of action 0 (going down) Interpolated.png", bbox_inches="tight")
+    plt.close(2)
 
     return
+
+
 
 def plot_final_value_function(path, name, T, critic, agent_type):
     """Plot the value function approximation of a trained model.
@@ -200,7 +185,7 @@ def plot_final_value_function(path, name, T, critic, agent_type):
         critic : tf.keras.Model
             reinforcement learning model for value function approximation
         agent_type : str
-            information whether the agent is a quantum or a NN agent
+            information wether the agent is a quantum or a NN agent
     """
 
     header = ["t", "x","state value"]
@@ -241,13 +226,27 @@ def plot_final_value_function(path, name, T, critic, agent_type):
                 data.append([t,x,value])
 
     data_csv = pd.DataFrame(data, columns=header)
-    data_csv.to_csv(os.path.join(path, f"{name} Final value function.csv"), index=False)
+    data_csv.to_csv(path+"/"+name+" Final value function.csv", index=False)
 
     extent =  0, T, -T, T
 
-    plot_image(path, name, array0, extent, "plasma", "t", "x", "Final value function")
+    plt.figure(0)
+    plt.imshow(array0, cmap="plasma", extent=extent,aspect="auto")
+    plt.colorbar()
+    plt.xlabel("t")
+    plt.ylabel("x")
+    plt.savefig(path+"/"+name+" Final value function.png", bbox_inches="tight")
+    plt.close(0)
+
     array2 = interpolate_array(array0)
-    plot_image(path, name, array2, extent, "plasma", "t", "x", "Final value function Interpolated", 2, "bilinear")
+
+    plt.figure(2)
+    plt.imshow(array2, cmap="plasma", extent=extent, interpolation= "bilinear",aspect="auto")
+    plt.colorbar()
+    plt.xlabel("t")
+    plt.ylabel("x")
+    plt.savefig(path+"/"+name+" Final value function Interpolated.png", bbox_inches="tight")
+    plt.close(2)
 
     fig = plt.figure(4)
     ax = fig.add_subplot(111, projection="3d")
@@ -257,41 +256,16 @@ def plot_final_value_function(path, name, T, critic, agent_type):
     ax.set_xlabel("x")
     ax.set_ylabel("t")
     ax.set_zlabel("Probabilities for action 0")
-    fig.savefig(os.path.join(path, f"{name} Final value function Surface.png"), bbox_inches="tight")
+    fig.savefig(path+"/"+name+" Final value function Surface.png", bbox_inches="tight")
     plt.close(4)
 
     return
 
-def plot_trajectories(path, name, files, colors, title, legend_elements=None):
-    """Helper function to plot trajectories."""
-    pylab.figure(0)
-    color_index = 0
-    traj_counter = 0
-    color_change = int(len(files) / len(colors))
 
-    for file in files:
-        with open(file, "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)  # Skip header
-            for row in reader:
-                t = [int(ts) for ts in row[3].replace("(", "").replace(")", "").replace(",", "").split()]
-                x = [int(xs) for xs in row[4].replace("(", "").replace(")", "").replace(",", "").split()]
-                try:
-                    pylab.plot(t, x, color=colors[color_index])
-                except:
-                    pylab.plot(t, x, color=colors[-1])
-                traj_counter += 1
-                if traj_counter >= color_change:
-                    traj_counter = 0
-                    color_index += 1
-
-    if legend_elements:
-        pylab.legend(loc="upper left", handles=legend_elements)
-    save_plot(path, name, title, "t", "x")
 
 def plot_trajectories_learning(path, name, n_episodes):
     """Plot all trajectories generated during learning.
-        Trajectories are plotted with a gradient starting with a clear gray for early generated trajectories
+        Trajectories are plottet with a gradient starting with a clear gray for early generated trajectories
         and blue for trajectories generated at the end of the learning process.
 
         Input
@@ -307,11 +281,54 @@ def plot_trajectories_learning(path, name, n_episodes):
     colors = ["#f8f8f8","#f6f6f6", "#f4f4f4","#f2f2f2", "#f0f0f0","#eeeeee", "#ececec", "#eaeaea", "#e8e8e8", "#e6e6e6", "#e4e4e4","#e2e2e2", "#e0e0e0","#dedede", "#dcdcdc","#dadada", "#d8d8d8","#d6d6d6", "#d4d4d4"]
     colors.append(color_lines)
 
-    files = [os.path.join(path, "CSVs/Trajectories during learning", f) for f in os.listdir(os.path.join(path, "CSVs/Trajectories during learning"))]
+    color_change = int(n_episodes/len(colors))
 
-    plot_trajectories(path, name, files, colors, "Trajectories generated during learning")
+    files = [path+"/CSVs/Trajectories during learning/"+f for f in os.listdir(path+"/CSVs/Trajectories during learning/")]
+
+    color_index = 0
+    traj_counter = 0
+
+    pylab.figure(0)
+
+    for file in files:
+
+        with open(file,"r") as f:
+
+            reader = csv.reader(f, delimiter=",")
+
+            # Skip header
+            next(reader)
+
+            for row in reader:
+
+                t = row[4].replace("(", "").replace(")", "").replace(",", "")
+                t = t.split()
+                t = [int(ts) for ts in t]
+                x = row[5].replace("(", "").replace(")", "").replace(",", "")
+                x = x.split()
+                x = [int(xs) for xs in x]
+
+                try:
+                    pylab.plot(t, x, color=colors[color_index])
+                except:
+                    pylab.plot(t, x, color=colors[len(colors)-1])
+
+                traj_counter += 1
+
+                if traj_counter >= color_change:
+                    traj_counter = 0
+                    color_index +=1
+
+    pylab.xlabel("t")
+    pylab.ylabel("x")
+    title="Trajectories generated during learning"
+    pylab.title(title)
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
+
+
 
 def plot_trajectories_after_learning(path, name, n_episodes):
     """Plot all trajectories generated after learning.
@@ -326,14 +343,58 @@ def plot_trajectories_after_learning(path, name, n_episodes):
             number of total trajectories generated after learning
     """
 
-    files = [os.path.join(path, "CSVs/Trajectories after learning", f) for f in os.listdir(os.path.join(path, "CSVs/Trajectories after learning"))]
+    files = [path+"/CSVs/Trajectories after learning/"+f for f in os.listdir(path+"/CSVs/Trajectories after learning/")]
 
     colors = [color_lines,"#B2B2B2"]
-    legend_elements = [mpl.patches.Patch(color=colors[0], label="Rare"),mpl.patches.Patch(color=colors[1], label="Fail")]
+    labels = ["Rare", "Failed"]
 
-    plot_trajectories(path, name, files, colors, f"Trajectories generated after learning ({n_episodes} total)", legend_elements)
+    traj_counter = 1
+
+    rare_traj_counter = 0
+
+    pylab.figure(0)
+
+    for file in files:
+
+        with open(file,"r") as f:
+
+            reader = csv.reader(f, delimiter=",")
+
+            # Skip header
+            next(reader)
+
+            for row in reader:
+
+                t = row[3].replace("(", "").replace(")", "").replace(",", "")
+                t = t.split()
+                t = [int(ts) for ts in t]
+                x = row[4].replace("(", "").replace(")", "").replace(",", "")
+                x = x.split()
+                x = [int(xs) for xs in x]
+
+                if str(row[1]) == "True":
+                    color = 0
+                    rare_traj_counter += 1
+                else:
+                    color = 1
+
+                try:
+                    pylab.plot(t, x, color=colors[color])
+                except:
+                    pylab.plot(t, x, color=colors[len(colors)-1])
+
+    pylab.xlabel("t")
+    pylab.ylabel("x")
+    title="Trajectories generated after learning (" +str(rare_traj_counter)+" rare trajectories out of "+str(n_episodes)+" total)"
+    pylab.title(title)
+    legend_elements = [mpl.patches.Patch(color=colors[0], label="Rare"),mpl.patches.Patch(color=colors[1], label="Fail")]
+    pylab.legend(loc="upper left", handles=legend_elements)
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
+
+
 
 def plot_return_per_episode(path, name, return_per_episode):
     """Plot return per episode.
@@ -348,9 +409,19 @@ def plot_return_per_episode(path, name, return_per_episode):
             list of returns per episode
     """
 
-    plot_and_save(path, name, return_per_episode, "Episode", "Return per Episode", "Return per episode")
+    episodes = range(1, len(return_per_episode)+1)
+
+    pylab.figure(0)
+    pylab.plot(episodes, return_per_episode, color=color_lines)
+    pylab.xlabel("Episode")
+    pylab.ylabel("Return per Episode")
+    title="Return per episode"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
+
+
 
 def plot_avg_return_per_batch(path, name, return_per_batch):
     """Plot mean return per batch.
@@ -365,12 +436,22 @@ def plot_avg_return_per_batch(path, name, return_per_batch):
             list of returns per batch
     """
 
-    plot_and_save(path, name, return_per_batch, "Batch", "Return per batch", "Return per batch")
+    batches = range(1, len(return_per_batch)+1)
+
+    pylab.figure(0)
+    pylab.plot(batches, return_per_batch, color=color_lines)
+    pylab.xlabel("Batch")
+    pylab.ylabel("Return per batch")
+    title="Return per batch"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
 
+
+
 def plot_dif_rare_per_episode(path, name, dif_counts):
-    """Plot accumulated number of different rare trajectories generated up to each episode during the learning process.
+    """Plot acumulated number of different rare trajectories generated up to each episode during the lerning process.
 
         Input
         -----
@@ -382,9 +463,19 @@ def plot_dif_rare_per_episode(path, name, dif_counts):
             list of number of different rare trajectories generated up to each episode
     """
 
-    plot_and_save(path, name, dif_counts, "Episode", "Count of dif rare trajectory per episode", "Count of dif rare trajectories per episode")
+    episodes = range(1, len(dif_counts)+1)
+
+    pylab.figure(0)
+    pylab.plot(episodes, dif_counts, color=color_lines)
+    pylab.xlabel("Episode")
+    pylab.ylabel("Count of dif rare trajectory per episode")
+    title="Count of dif rare trajectories per episode"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
+
+
 
 def plot_avg_probability(path, name, avg_probs):
     """Plot probabilities of generating a rare trajectory for each episode.
@@ -399,12 +490,22 @@ def plot_avg_probability(path, name, avg_probs):
             list of probabilities of generating a rare trajectory for each episode
     """
 
-    plot_and_save(path, name, avg_probs, "Episode", "Probability of generating rare trajectory", "Probability of generating rare trajectory")
+    episodes = range(1, len(avg_probs)+1)
+
+    pylab.figure(0)
+    pylab.plot(episodes, avg_probs, color=color_lines)
+    pylab.xlabel("Episode")
+    pylab.ylabel("Probability of generating rare trajectory")
+    title="Probability of generating rare trajectory"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
 
+
+
 def plot_rare_count_per_batch(path, name, batch_counts, batch_size):
-    """Plot count of rare trajectories generated in a batch during the learning process.
+    """Plot count of rare trajectories generated in a batch during the lerning process.
 
         Input
         -----
@@ -431,10 +532,25 @@ def plot_rare_count_per_batch(path, name, batch_counts, batch_size):
         batch_probs.append(n/batch_size)
         batch_probs_running.append(batch_counts_sum/batch_sum)
 
-    plot_and_save(path, name, batch_counts, "Batch", "Count of rare trajectories generated in batch", "Count of rare trajectories generated in batch")
-    plot_and_save(path, name+1, batch_probs, "Batch", "Probability of rare trajectory generated in batch", "Probability of rare trajectory generated in batch")
+    pylab.figure(0)
+    pylab.plot(batches, batch_counts, color=color_lines)
+    pylab.xlabel("Batch")
+    pylab.ylabel("Count of rare trajectories generated in batch")
+    title="Count of rare trajectories generated in batch"
+    pylab.savefig(path+"/Plots/"+str(name)+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
+
+    pylab.figure(1)
+    pylab.plot(batches, batch_probs, color=color_lines)
+    pylab.xlabel("Batch")
+    pylab.ylabel("Probability of rare trajectory generated in batch")
+    title="Probability of rare trajectory generated in batch"
+    pylab.savefig(path+"/Plots/"+str(name+1)+" "+title+".png", bbox_inches="tight")
+    pylab.close(1)
 
     return
+
+
 
 def plot_critic_loss(path, name, loss):
     """Plot critic loss.
@@ -449,9 +565,19 @@ def plot_critic_loss(path, name, loss):
             list of critic loss per batch
     """
 
-    plot_and_save(path, name, loss, "Batch", "Critic loss", "Critic loss")
+    batches = range(1, len(loss)+1)
+
+    pylab.figure(0)
+    pylab.plot(batches, loss, color=color_lines)
+    pylab.xlabel("Batch")
+    pylab.ylabel("Critic loss")
+    title="Critic loss"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
+
+
 
 def plot_actor_loss(path, name, loss):
     """Plot actor loss.
@@ -466,6 +592,14 @@ def plot_actor_loss(path, name, loss):
             list of actor loss per batch
     """
 
-    plot_and_save(path, name, loss, "Batch", "Actor loss", "Actor loss")
+    batches = range(1, len(loss)+1)
+
+    pylab.figure(0)
+    pylab.plot(batches, loss, color=color_lines)
+    pylab.xlabel("Batch")
+    pylab.ylabel("Actor loss")
+    title="Actor loss"
+    pylab.savefig(path+"/Plots/"+name+" "+title+".png", bbox_inches="tight")
+    pylab.close(0)
 
     return
