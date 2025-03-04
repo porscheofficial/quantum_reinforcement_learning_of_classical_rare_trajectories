@@ -72,4 +72,4 @@ The origin of this project is part of the Quantum research of Porsche Digital an
 See [LICENSE](./LICENSE.md).
 
 ## Disclaimer
-* This repository is based on Tensorflow 2.7.0 and other pinned dependencies that contain vulnerabilities. To ensure the reproducibility of the results in the published paper, these dependencies are not updated. We therefore ask you to use this scientific software with caution and not in productive environments.
+* This repository is based on Tensorflow 2.7.0 and other pinned dependencies that contain vulnerabilities. To ensure the reproducibility of the results in the published paper, these dependencies are not updated. We therefore ask you to use this scientific software with caution and not in productive environments. Proceeding against this advice is at your own risk.
