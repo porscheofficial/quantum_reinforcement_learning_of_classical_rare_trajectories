@@ -417,209 +417,99 @@ def NN_reinforce_update(states, next_states, rewards, actions, models, batch_siz
 
 
 
+def save_csv(data, header, path, file_counter):
+    data_csv = pd.DataFrame(data, columns=header)
+    file_path = f"{path}/CSVs/Trajectories during learning/AC,{file_counter}.csv"
+    data_csv.to_csv(file_path, index=False)
+
+def update_model_parameters(config, states_batch, rewards_batch, action_batch, next_states_batch, models, losses):
+    states_batch = tf.convert_to_tensor(states_batch)
+    rewards_batch = tf.convert_to_tensor(rewards_batch)
+    id_action_pairs_batch = tf.convert_to_tensor([[i, a] for i, a in enumerate(action_batch)])
+
+    if config.get("agent", "RL_class") == "PG":
+        if config.get("agent", "type") == "PQC":
+            policy_gradient_update(states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes", "batch_size"), losses)
+        elif config.get("agent", "type") == "NN":
+            NN_policy_gradient_update(states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes", "batch_size"), losses)
+    elif config.get("agent", "RL_class") == "AC":
+        next_states_batch = tf.convert_to_tensor(next_states_batch)
+        if config.get("agent", "type") == "PQC":
+            reinforce_update(states_batch, next_states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes", "batch_size"), losses)
+        elif config.get("agent", "type") == "NN":
+            NN_reinforce_update(states_batch, next_states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes", "batch_size"), losses)
+
 def learn_batched(path, config, models):
-    """ Performs the learning of a rare dynamic.
-
-        Input
-        -----
-        path : str
-            path where learning results and models are to be saved
-        config : configparser.ConfigParser
-            configuration settings for all parameters of the learning task
-        models: dict
-            reinforcement learning model to be used for learning task
-
-        Output
-        ------
-        batch_avgs : [float]
-            list of mean return per batch
-        batch_rare_counts : [int]
-            list of count of rare trajectories per batch
-        return_per_episode : [float]
-            list of return per episode
-        rare_dif_counts : [int]
-            ist of accumulated count of rare trajectories per episode
-        losses : dict
-            dictionary with reinforcement learning model losses during learning
-    """
-    # Prepare CSV file to save data in it during learning
-    header = ["n", "Batch id","Rare trajectory?","Return","Time","Positions", "Probabilities", "KL-Regularization","Values"]
-    data = []
-    file_counter = 0
-    file_path = path+"/CSVs/Trajectories during learning/"+str(file_counter)+".csv"
-
-    # Create new CSV file every 5000 trajectories to prevent CSV file of getting to big:
-    new_file = 5000
-
-    # Return of all trajectories generated during learning
-    return_per_episode = []
-
-    # Avarage returns per batch
-    batch_avgs = []
-
-    # Rare trajectory count per batch
-    batch_rare_counts = []
-
-    # Rare trajectory count total during learning
-    rare_count_total = 0
-
-    # Count different rare trajectories during learning
-    rare_dif_counts = []
-    rare_dif_count = 0
-    rare_dif = {}
-
-    # Save Losses
+    """ Performs the learning of a rare dynamic. """
+    header = ["n", "Batch id", "Rare trajectory?", "Return", "Time", "Positions", "Probabilities", "KL-Regularization", "Values"]
+    data, file_counter, new_file = [], 0, 5000
+    return_per_episode, batch_avgs, batch_rare_counts, rare_dif_counts = [], [], [], []
+    rare_count_total, rare_dif_count, rare_dif = 0, 0, {}
     losses = Losses()
-
-    # # Counter to stop after 100 consecutive rare trajectories generated
-    # count_rare_folge = 0
-
-    # Counter for saving model weights every now and then
-    save_model_weights = 20
-    save_model_weights_counter = 1
+    save_model_weights, save_model_weights_counter = 20, 1
 
     tf.config.run_functions_eagerly(True)
 
-    for batch in range(int(config.getint("episodes","episodes")/config.getint("episodes","batch_size"))):
+    for batch in range(int(config.getint("episodes", "episodes") / config.getint("episodes", "batch_size"))):
+        rare_count_batch, returns_batch = 0, []
+        rewards_batch, states_batch, next_states_batch, action_batch = [], [], [], []
+        start_state = [int(i) for i in config.get("random_walker", "start_state").split(",")]
+        trajectories = [Trajectory(start_state) for _ in range(config.getint("episodes", "batch_size"))]
 
-        # Init counter for rare trajectories generated in batch
-        rare_count_batch = 0
-        returns_batch = []
+        for i, traj in enumerate(trajectories):
+            for t in range(config.getint("environment", "T")):
+                actions = [int(i) for i in config.get("environment", "actions").split(",")]
+                rw_probs = [float(i) for i in config.get("random_walker", "rw_probs").split(",")]
+                step(traj, models, actions, rw_probs, config.get("agent", "type"), config.get("agent", "rl_class"))
 
-        # Init batch data arrays for updating trainable params
-        rewards_batch = []
-        states_batch = []
-        next_states_batch = []
-        action_batch = []
-        episode_returns = []
-        rare_count_batch = 0
-
-        # Init trajectories
-        start_state = config.get("random_walker","start_state").split(",")
-        start_state = [int(i) for i in start_state]
-        trajectories = [Trajectory(start_state) for _ in range(config.getint("episodes","batch_size"))]
-
-        for i in range(config.getint("episodes","batch_size")):
-
-            traj = trajectories[i]
-
-            # Generate trajectories
-            for t in range(config.getint("environment","T")):
-
-                actions = config.get("environment","actions").split(",")
-                actions = [int(i) for i in actions]
-                rw_probs = config.get("random_walker","rw_probs").split(",")
-                rw_probs = [float(i) for i in rw_probs]
-                step(traj, models, actions, rw_probs, config.get("agent","type"), config.get("agent","rl_class"))
-
-            # Weigh trajectories acording to rareness using a specified weight function
-            rewards = compute_rewards(traj, config.getint("environment","T"), config.getint("environment","X"), config.getfloat("reward","b"), config.getfloat("reward","s"))
-
-            if config.get("agent","RL_class")== "PG":
-                rewards_batch.extend(acumulate_rewards(rewards))
-            else:
-                rewards_batch.extend(rewards[1:])
-
-            # Gather episode states, actions and rewards for updating training params
+            rewards = compute_rewards(traj, config.getint("environment", "T"), config.getint("environment", "X"), config.getfloat("reward", "b"), config.getfloat("reward", "s"))
+            rewards_batch.extend(acumulate_rewards(rewards) if config.get("agent", "RL_class") == "PG" else rewards[1:])
             states_batch.extend(traj.states[:-1])
             next_states_batch.extend(traj.states[1:])
             action_batch.extend(traj.actions)
             returns_batch.append(traj.traj_return)
 
-            # Count rare trajectories generated in batch for plotting purposes and print return for learning monitoring purpose
-            if traj.rare == True:
-                rare_count_batch +=1
-                rare_count_total +=1
-                # count_rare_folge +=1
+            if traj.rare:
+                rare_count_batch += 1
+                rare_count_total += 1
                 if str(traj.states) not in rare_dif:
                     rare_dif[str(traj.states)] = 1
                     rare_dif_count += 1
                 else:
-                    rare_dif.update({str(traj.states): rare_dif[str(traj.states)]+1})
-            # else:
-            #     count_rare_folge = 0
+                    rare_dif[str(traj.states)] += 1
 
             rare_dif_counts.append(rare_dif_count)
-
-            # Collect returns of trajectories during learning and per batch for plotting purposes
             return_per_episode.append(traj.traj_return)
-            returns_batch.append(traj.traj_return)
 
-            # Create new CSV file to save trajectory data during learning for later plotting
-            if ( (batch*config.getint("episodes","batch_size")) + i)%new_file==0 and ( (batch*config.getint("episodes","batch_size")) + i)!=0:
-                #Save CSV file:
-                data_csv = pd.DataFrame(data, columns=header)
-                file_path= path+"/CSVs/Trajectories during learning/AC,"+str(file_counter)+".csv"
-                data_csv.to_csv(file_path, index=False)
-                file_counter+=1
-                data=[]
+            if (batch * config.getint("episodes", "batch_size") + i) % new_file == 0 and (batch * config.getint("episodes", "batch_size") + i) != 0:
+                save_csv(data, header, path, file_counter)
+                file_counter += 1
+                data = []
 
             traj_times, traj_pos = zip(*(traj.states))
+            data.append([(batch * config.getint("episodes", "batch_size") + i), batch, traj.rare, traj.traj_return, traj_times, traj_pos, traj.probs, traj.rewards_kl, traj.values])
 
-            data.append([((batch*config.getint("episodes","batch_size")) + i), batch, traj.rare, traj.traj_return, traj_times, traj_pos, traj.probs, traj.rewards_kl, traj.values])
-
-        # # Stop learning after 100 consecutive rare trajectories
-        # if count_rare_folge >= 100:
-        #     break
-
-        # Update model parameters
-        if config.get("agent","RL_class")== "PG":
-
-            states_batch = tf.convert_to_tensor(states_batch)
-            rewards_batch = tf.convert_to_tensor(rewards_batch)
-            id_action_pairs_batch = [[i,a] for i, a in enumerate(action_batch)]
-            id_action_pairs_batch = tf.convert_to_tensor(id_action_pairs_batch)
-
-            # Update model parameters.
-            if config.get("agent","type")== "PQC":
-                policy_gradient_update(states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes","batch_size"), losses)
-
-            elif config.get("agent","type")== "NN":
-                NN_policy_gradient_update(states_batch, rewards_batch, id_action_pairs_batch, models, config.getint("episodes","batch_size"), losses)
-
-        elif config.get("agent","RL_class")== "AC":
-
-            rewards_batch = tf.convert_to_tensor(rewards_batch)
-            states_batch = tf.convert_to_tensor(states_batch)
-            next_states_batch = tf.convert_to_tensor(next_states_batch)
-            id_action_pairs_batch = [[i,a] for i, a in enumerate(action_batch)]
-            id_action_pairs_batch = tf.convert_to_tensor(id_action_pairs_batch)
-
-            # Update model parameters.
-            if config.get("agent","type")== "PQC":
-                reinforce_update(states_batch, next_states_batch, rewards_batch, id_action_pairs_batch,models, config.getint("episodes","batch_size"), losses)
-
-            elif config.get("agent","type")== "NN":
-                NN_reinforce_update(states_batch, next_states_batch, rewards_batch, id_action_pairs_batch,models, config.getint("episodes","batch_size"), losses)
-
-        # Gather some batch observables for plotting
+        update_model_parameters(config, states_batch, rewards_batch, action_batch, next_states_batch, models, losses)
         avg_return_batch = np.mean(returns_batch)
         batch_avgs.append(avg_return_batch)
         batch_rare_counts.append(rare_count_batch)
 
-        # Print batch avarage for monitoring purpose
-        print("Finished episode", (batch + 1) * config.getint("episodes","batch_size"), ", Average return per episode: ", avg_return_batch, ", rare count: ", rare_count_batch, "dif rare count:", rare_dif_count)
+        print(f"Finished episode {(batch + 1) * config.getint('episodes', 'batch_size')}, Average return per episode: {avg_return_batch}, rare count: {rare_count_batch}, dif rare count: {rare_dif_count}")
 
-        # Save model weights during training, save after save_model_weights-number of batches passed
         save_model_weights_counter += 1
         if save_model_weights_counter > save_model_weights:
             print("saving during training")
-            models["actor"].save_weights(models["actor_path"]+"last_checkpoint")
-            if config.get("agent","RL_class")=="AC":
-                models["critic"].save_weights(models["critic_path"]+"last_checkpoint")
+            models["actor"].save_weights(models["actor_path"] + "last_checkpoint")
+            if config.get("agent", "RL_class") == "AC":
+                models["critic"].save_weights(models["critic_path"] + "last_checkpoint")
             save_model_weights_counter = 0
 
-    # Save final model weights
     print("saving")
-    models["actor"].save_weights(models["actor_path"]+"last_checkpoint")
-    if config.get("agent","RL_class")=="AC":
-        models["critic"].save_weights(models["critic_path"]+"last_checkpoint")
+    models["actor"].save_weights(models["actor_path"] + "last_checkpoint")
+    if config.get("agent", "RL_class") == "AC":
+        models["critic"].save_weights(models["critic_path"] + "last_checkpoint")
 
-    #Save CSV file:
-    data_csv = pd.DataFrame(data, columns=header)
-    file_path= path+"/CSVs/Trajectories during learning/AC,"+str(file_counter)+".csv"
-    data_csv.to_csv(file_path, index=False)
-
+    save_csv(data, header, path, file_counter)
     return batch_avgs, batch_rare_counts, return_per_episode, rare_dif_counts, losses
 
 
