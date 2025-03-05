@@ -48,15 +48,23 @@ def build_OneQubit_quantum_circuit(state_dim, n_layers, noise):
 
         # Add single qubit rotation gates to each qubit
         for i in range(state_dim):
+            if noise > 0:
+                noise_rx = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.rx(inputs[i+l*state_dim] * noise_rx)(qubit[0]))
 
-            circuit.append(cirq.rx(inputs[i+l*state_dim])(qubit[0]))
+                noise_ry = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.ry(variational_params[param_counter] * noise_ry)(qubit[0]))
 
-            circuit.append(cirq.ry(variational_params[param_counter])(qubit[0]))
-            circuit.append(cirq.rz(variational_params[param_counter+1])(qubit[0]))
+                noise_rz = noise * np.random.uniform(-1, 1)
+                circuit.append(cirq.rz(variational_params[param_counter+1] * noise_rz)(qubit[0]))
+
+            else: 
+                circuit.append(cirq.rx(inputs[i+l*state_dim])(qubit[0]))
+
+                circuit.append(cirq.ry(variational_params[param_counter])(qubit[0]))
+                circuit.append(cirq.rz(variational_params[param_counter+1])(qubit[0]))
 
             param_counter += 2
-
-    #circuit + cirq.Circuit(cirq.depolarize(noise).on_each(*circuit.all_qubits()))
 
     return circuit, qubit, inputs, variational_params
 
