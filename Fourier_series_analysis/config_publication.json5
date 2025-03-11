@@ -1,0 +1,33 @@
+{
+    // time steps of random walk
+    "T": 20,
+    // reward/return function parameter
+    "s": 1.0,
+    // required final position of rare trajectory
+    "x_T": 0,
+    // random walk prob. to move one step up
+    "prob_step_up": 0.5,
+    // list of #qubits in the parameterized quantum circuit (PQC)
+    "no_qubits_list": [1, 2],
+    // #sets of randomly chosen variational angles = #times Fourier coefficients are computed
+    "no_samples_variational_params": 100,
+    // list of #data-uploading layers in the PQC
+    "no_layers_list": [1, 2, 3, 4, 5, 10, 15],
+    // #sets of randomly chosen initial values for fitting parameters = #times policies/parameterized probs. are fitted to reweighted probs. P_W
+    "no_fits": 100,
+    // fitting parameters to be used (either 'Fourier_coefficients' or 'variational_angles')
+    "fitting_parameters": "Fourier_coefficients",
+    // maximal #optimization steps; if null, use default stopping criterion for optimization with scipy.optimize.minimize
+    "max_optimization_steps": null,
+    // type of cost function to use for fitting (either 'leastsq' or 'KL_divergence')
+    "cost_func_type": "leastsq",
+    // #trajectories used for cost_func_type='trajectory_KL_divergence'
+    "no_trajectories_cost_func": 1000,
+    // #trajectories used for estimating properties of fitted policies
+    "no_trajectories_policy_evaluation": 10000,
+    // criterion to select policy from no_fits many fits (either 'max_prob_rare_trajectory', 'max_avg_return', 'min_KL_divergence', or 'min_MSE')
+    "policy_selection_criterion": "min_KL_divergence",
+    // if True, recompute previous stored results
+    "recompute_stored": false,
+
+}
