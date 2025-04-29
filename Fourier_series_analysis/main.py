@@ -167,7 +167,7 @@ def main(param_file_name: str = "config_publication.json5") -> None:
                     numeric_Fourier_series_analysis_2_layers is not None:
                 plot_Fourier_coeffs(1, numeric_Fourier_series_analysis_1_layer.coeffs_samples_array,
                                     f"{path_plots}/Fourier_coeffs_qubits_{no_qubits}_layers_1_and_2"
-                                    f"_samples_{no_samples_variational_params}.pdf",
+                                    f"_samples_{no_samples_variational_params}.pdf", second_no_layers=2,
                                     second_coeffs_samples=numeric_Fourier_series_analysis_2_layers.coeffs_samples_array)
 
 

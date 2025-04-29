@@ -166,7 +166,7 @@ def plot_as_heatmap(two_dim_array: np.ndarray, colorbar_label: str, title="", sa
             plt.close()
 
 
-def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as: str,
+def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as: str, second_no_layers: int = None,
                         second_coeffs_samples: np.ndarray = None) -> None:
     """
     Visualize Fourier coefficients as scatter plot.
@@ -178,6 +178,7 @@ def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as:
         coeffs_samples: coeffs_samples[j, m, n] contains the Fourier coefficient c_{m - no_layers, n} for frequency
                         n_x = m - no_layers and n_t = n of the j-th sample
         save_fig_as: name of PDF file to save plot
+        second_no_layers: if not None, number of layers of second set (see next parameter)
         second_coeffs_samples: if not None, second set of Fourier coefficients to be plotted
 
     Returns:
@@ -191,6 +192,8 @@ def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as:
     coeffs_imag = np.imag(coeffs_samples)
 
     if second_coeffs_samples is not None:
+        assert second_no_layers is not None, "if second_coeffs_samples is not None, second_no_layers must not be None"
+
         _, no_x_2, no_t_2 = second_coeffs_samples.shape
 
         assert no_x == no_t_2, ("coeffs_samples and second_coeffs_samples do not have consistent shapes for current "
@@ -225,7 +228,7 @@ def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as:
     if second_coeffs_samples is not None:
         for m in range(no_x_2):
             for n in range(no_t_2):
-                ax[n, no_t + m].set_title("$c_{" + str(m - no_layers) + str(n) + "}$")
+                ax[n, no_t + m].set_title("$c_{" + str(m - second_no_layers) + str(n) + "}$")
                 ax[n, no_t + m].scatter(coeffs_real_2[:, m, n], coeffs_imag_2[:, m, n], s=20,
                                  facecolor='white', edgecolor=colors[1])
                 ax[n, no_t + m].set_aspect("equal")
