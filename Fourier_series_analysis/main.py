@@ -11,8 +11,7 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 """
-
-
+import argparse
 import os
 import shutil
 import numpy as np
@@ -21,30 +20,30 @@ from policy_evaluation_and_plots import PolicyEvaluation, plot_as_heatmap, conve
     plot_xy_vs_no_layers, plot_Fourier_coeffs
 from reweighted_dynamics import ReweightedDynamics
 from Fourier_series_analysis_and_fits import ParameterizedDynamicsFits, FourierSeriesAnalysis
-from utilities import load_or_compute_obj, import_params_from_json5, convert_to_and_save_latex_string
+from utilities import get_file_names_with_version, load_or_compute_obj, import_params_from_json5, convert_to_and_save_latex_string
 from value_functions import ValueFunction
 
 
 logger = get_logger("main.py")
 
 
-def main(param_file_name: str = "config_publication.json5") -> None:
+def main(config_file_name: str = "config_publication.json5") -> None:
     logger.info("Starting main script.")
 
-    logger.info(f"1. Creating folders and loading parameters of computations from {param_file_name}.")
+    logger.info(f"1. Creating folders and loading parameters of computations from {config_file_name}.")
     path_script = os.path.dirname(os.path.abspath(__file__))  # get directory of current script
-    param_folder_name = param_file_name.split(".")[0]
+    config_folder_name = config_file_name.split(".")[0]
 
-    path_computations = os.path.join(path_script, f"results/{param_folder_name}/computations")
+    path_computations = os.path.join(path_script, f"results/{config_folder_name}/computations")
     os.makedirs(path_computations, exist_ok=True)
 
-    path_plots = os.path.join(path_script, f"results/{param_folder_name}/plots")
+    path_plots = os.path.join(path_script, f"results/{config_folder_name}/plots")
     os.makedirs(path_plots, exist_ok=True)
 
-    path_config = os.path.join(path_script, f"results/{param_folder_name}")
-    shutil.copy(param_file_name, path_config)
+    path_config = os.path.join(path_script, f"results/{config_folder_name}")
+    shutil.copy(config_file_name, path_config)
 
-    params = import_params_from_json5(param_file_name)
+    params = import_params_from_json5(config_file_name)
 
     # parameters of computations (see comments in CSV file for their meaning)
     T = params["T"]
@@ -56,6 +55,8 @@ def main(param_file_name: str = "config_publication.json5") -> None:
     no_layers_list = params["no_layers_list"]
     no_fits = params["no_fits"]
     fitting_parameters = params["fitting_parameters"]
+    no_random_Fourier_features = params["no_random_Fourier_features"]
+    no_choices_random_Fourier_features = params["no_choices_random_Fourier_features"]
     max_optimization_steps = params["max_optimization_steps"]
     cost_func_type = params["cost_func_type"]
     no_trajectories_cost_func = params["no_trajectories_cost_func"]
@@ -142,6 +143,9 @@ def main(param_file_name: str = "config_publication.json5") -> None:
 
     for no_qubits in no_qubits_list:
         for no_layers in no_layers_list:
+            if no_qubits == 2 and no_layers > 8:
+                continue
+
             logger.info(f"qubits: {no_qubits}, data-uploading layers: {no_layers}")
             numeric_Fourier_series_analysis = \
                 load_or_compute_obj(FourierSeriesAnalysis,
@@ -176,26 +180,48 @@ def main(param_file_name: str = "config_publication.json5") -> None:
 
     for no_qubits in no_qubits_list:
         for no_layers in no_layers_list:
-            if fitting_parameters == "Fourier_coefficients" and no_qubits == 2 and no_layers > 1:
+            if fitting_parameters in ("Fourier_coefficients", "random_Fourier_features") and no_qubits == 2 and no_layers > 1:
                 continue  # for no_layers > 1, fitting in terms of Fourier coefficients is the same for 1 and 2 qubits
 
-            logger.info(f"qubits: {no_qubits}, data-uploading layers: {no_layers}")
-            parameterized_dynamics_fits = \
-                load_or_compute_obj(ParameterizedDynamicsFits,
-                                    lambda: ParameterizedDynamicsFits(reweighted_dynamics.reweighted_dynamics_P_W,
-                                                                      no_qubits, no_layers, no_fits, fitting_parameters,
-                                                                      cost_func_type,
-                                                                      no_trajectories_cost_func=no_trajectories_cost_func,
-                                                                      max_optimization_steps=max_optimization_steps,
-                                                                      T=T, s=s, x_T=x_T, prob_step_up=prob_step_up,
-                                                                      optimal_average_return=np.log(reweighted_dynamics.partition_function_Z),
-                                                                      compute_in_parallel=True),
-                                    f"{path_computations}/fits_qubits_{no_qubits}_layers_{no_layers}_"
-                                    f"{cost_func_type}_fitting_parameters_{fitting_parameters}.npz", params,
-                                    recompute=recompute_stored)
+            if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
+                logger.info(f"qubits: {no_qubits}, data-uploading layers: {no_layers}")
 
-            parameterized_dynamics_fits_dict[f"(qubits: {no_qubits}, layers: {no_layers})"] = \
-                parameterized_dynamics_fits
+                file_name_list = [f"{path_computations}/fits_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                                  f"fitting_parameters_{fitting_parameters}.npz"]
+                end_version = 1
+
+            if fitting_parameters == "random_Fourier_features":
+                logger.info(f"qubits: {no_qubits}, data-uploading layers: {no_layers}, "
+                            f"random_Fourier_features: {no_random_Fourier_features}")
+
+                file_name = (f"{path_computations}/fits_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                             f"random_Fourier_features_{no_random_Fourier_features}.npz")
+
+                file_name_list, end_version = get_file_names_with_version(file_name, no_choices_random_Fourier_features,
+                                                                          path_computations)
+
+            for file_name in file_name_list:
+                parameterized_dynamics_fits = \
+                    load_or_compute_obj(ParameterizedDynamicsFits,
+                                        lambda: ParameterizedDynamicsFits(reweighted_dynamics.reweighted_dynamics_P_W,
+                                                                          no_qubits, no_layers, no_fits, fitting_parameters,
+                                                                          cost_func_type,
+                                                                          no_trajectories_cost_func=no_trajectories_cost_func,
+                                                                          max_optimization_steps=max_optimization_steps,
+                                                                          no_random_Fourier_features=no_random_Fourier_features,
+                                                                          T=T, s=s, x_T=x_T, prob_step_up=prob_step_up,
+                                                                          optimal_average_return=np.log(reweighted_dynamics.partition_function_Z),
+                                                                          compute_in_parallel=True),
+                                        file_name, params, recompute=recompute_stored)
+
+                if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
+                    parameterized_dynamics_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, version: 1")] = \
+                        parameterized_dynamics_fits
+
+                if fitting_parameters == "random_Fourier_features":
+                    parameterized_dynamics_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, "
+                                                      f"version: {file_name.split('_v')[1].split('.')[0]})")] = \
+                        parameterized_dynamics_fits
 
 
     logger.info(f"8. Evaluation of fitted policies.")
@@ -206,64 +232,134 @@ def main(param_file_name: str = "config_publication.json5") -> None:
             if no_qubits == 2 and no_layers > 1:
                 continue
 
-            policies_array = \
-                parameterized_dynamics_fits_dict[f"(qubits: {no_qubits}, layers: {no_layers})"].fitted_policies_array
+            if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
+                file_name_list = [f"{path_computations}/evaluation_fits_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                                  f"fitting_parameters_{fitting_parameters}.npz"]
 
-            evaluation_fits = \
-                load_or_compute_obj(PolicyEvaluation,
-                                    lambda: PolicyEvaluation(T, s, x_T, prob_step_up,
-                                                             no_trajectories_policy_evaluation,
-                                                             policies_array=policies_array,
-                                                             reweighted_dynamics=reweighted_dynamics,
-                                                             policy_selection_criterion=policy_selection_criterion),
-                                    f"{path_computations}/evaluation_fits_qubits_{no_qubits}_"
-                                    f"layers_{no_layers}_{cost_func_type}_fitting_parameters_{fitting_parameters}.npz",
-                                    params, recompute=recompute_stored)
+                plot_file_name_list = [f"{path_plots}/selected_fit_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                                       f"fitting_parameters_{fitting_parameters}.pdf"]
 
-            evaluation_fits_dict[f"(qubits: {no_qubits}, layers: {no_layers})"] = evaluation_fits
+            if fitting_parameters == "random_Fourier_features":
+                file_name = (f"{path_computations}/evaluation_fits_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                             f"random_Fourier_features_{no_random_Fourier_features}.npz")
 
-            plot_data = convert_dict_to_data_frame({"qubits": no_qubits, "layers": no_layers, "no_fits": no_fits,
-                                                    "fitting_parameters": fitting_parameters,
-                                                    "cost_func_type": cost_func_type,
-                                                    "no_trajectories_cost_func": no_trajectories_cost_func,
-                                                    "max_optimization_steps": max_optimization_steps}
-                                                   | evaluation_fits.__dict__)
-            plot_as_heatmap(policies_array[evaluation_fits.index_selected_policy], "$P_{\\theta}(x - 1 | x, t)$",
-                            save_fig_as=f"{path_plots}/selected_fit_qubits_{no_qubits}_layers_{no_layers}_"
-                                        f"{cost_func_type}_fitting_parameters_{fitting_parameters}.pdf",
-                            plot_complement=True, plot_data=plot_data,
-                            plot_mask=np.isnan(reweighted_dynamics.reweighted_dynamics_P_W), value_limits=(0., 1.))
+                plot_file_name = (f"{path_plots}/selected_fit_qubits_{no_qubits}_layers_{no_layers}_{cost_func_type}_"
+                                  f"random_Fourier_features_{no_random_Fourier_features}.pdf")
+
+                file_name_list, _ = get_file_names_with_version(file_name, no_choices_random_Fourier_features,
+                                                                path_computations)
+
+                plot_file_name_list, _ = get_file_names_with_version(plot_file_name, no_choices_random_Fourier_features,
+                                                                     path_plots)
+
+            for n, file_name in enumerate(file_name_list):
+                policies_array = \
+                    parameterized_dynamics_fits_dict[
+                        (f"(qubits: {no_qubits}, layers: {no_layers}, "
+                         f"version: {file_name.split('_v')[1].split('.')[0] if fitting_parameters == 'random_Fourier_features' else 1})")
+                    ].fitted_policies_array
+
+                evaluation_fits = \
+                    load_or_compute_obj(PolicyEvaluation,
+                                        lambda: PolicyEvaluation(T, s, x_T, prob_step_up,
+                                                                 no_trajectories_policy_evaluation,
+                                                                 policies_array=policies_array,
+                                                                 reweighted_dynamics=reweighted_dynamics,
+                                                                 policy_selection_criterion=policy_selection_criterion),
+                                        file_name, params, recompute=recompute_stored)
 
 
+                if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
+                    evaluation_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, version: 1")] = evaluation_fits
+
+                    plot_data = convert_dict_to_data_frame({"qubits": no_qubits, "layers": no_layers, "no_fits": no_fits,
+                                                            "fitting_parameters": fitting_parameters,
+                                                            "cost_func_type": cost_func_type,
+                                                            "no_trajectories_cost_func": no_trajectories_cost_func,
+                                                            "max_optimization_steps": max_optimization_steps}
+                                                           | evaluation_fits.__dict__)
+
+                if fitting_parameters == "random_Fourier_features":
+                    evaluation_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, "
+                                          f"version: {file_name.split('_v')[1].split('.')[0]})")] = evaluation_fits
+
+                    plot_data = convert_dict_to_data_frame({"qubits": no_qubits, "layers": no_layers, "no_fits": no_fits,
+                                                            "fitting_parameters": fitting_parameters,
+                                                            "no_random_Fourier_features": no_random_Fourier_features,
+                                                            "no_choices_random_Fourier_features": no_choices_random_Fourier_features,
+                                                            "cost_func_type": cost_func_type,
+                                                            "no_trajectories_cost_func": no_trajectories_cost_func,
+                                                            "max_optimization_steps": max_optimization_steps}
+                                                           | evaluation_fits.__dict__)
+
+                plot_as_heatmap(policies_array[evaluation_fits.index_selected_policy], "$P_{\\theta}(x - 1 | x, t)$",
+                                save_fig_as=plot_file_name_list[n], plot_complement=True, plot_data=plot_data,
+                                plot_mask=np.isnan(reweighted_dynamics.reweighted_dynamics_P_W), value_limits=(0., 1.))
+
+
+    # TODO: check whether the following code works correctly if fitting_parameters == "random_Fourier_features"
     logger.info(f"9. Generation of overview plot.")
     # initialize lists for plotting
     min_KL_1_qubit_list = \
-        [evaluation_fits_dict[f"(qubits: 1, layers: {no_layers})"].min_Kullback_Leibler_divergence_estimate
-         for no_layers in no_layers_list]
-    min_KL_2_qubits = evaluation_fits_dict[f"(qubits: 2, layers: 1)"].min_Kullback_Leibler_divergence_estimate
+        [[evaluation_fits_dict[f"(qubits: 1, layers: {no_layers}, version: {version_no})"].min_Kullback_Leibler_divergence_estimate
+          for no_layers in no_layers_list]
+         for version_no in range(1, end_version + 1)]
+    try:
+        min_KL_2_qubits_list = \
+            [evaluation_fits_dict[f"(qubits: 2, layers: 1, version: {version_no})"].min_Kullback_Leibler_divergence_estimate
+             for version_no in range(1, end_version + 1)]
+    except KeyError:
+        min_KL_2_qubits_list = [np.nan]
+
     mean_KL_1_qubit_list = \
-        [evaluation_fits_dict[f"(qubits: 1, layers: {no_layers})"].mean_Kullback_Leibler_divergence_estimate
-         for no_layers in no_layers_list]
-    mean_KL_2_qubits = evaluation_fits_dict[f"(qubits: 2, layers: 1)"].mean_Kullback_Leibler_divergence_estimate
+        [[evaluation_fits_dict[f"(qubits: 1, layers: {no_layers}, version: {version_no})"].mean_Kullback_Leibler_divergence_estimate
+          for no_layers in no_layers_list]
+         for version_no in range(1, end_version + 1)]
+    try:
+        mean_KL_2_qubits_list = \
+            [evaluation_fits_dict[f"(qubits: 2, layers: 1, version: {version_no})"].mean_Kullback_Leibler_divergence_estimate
+             for version_no in range(1, end_version + 1)]
+    except KeyError:
+        mean_KL_2_qubits_list = [np.nan]
+
     std_KL_1_qubit_list = \
-        [evaluation_fits_dict[f"(qubits: 1, layers: {no_layers})"].std_Kullback_Leibler_divergence_estimate
-         for no_layers in no_layers_list]
-    std_KL_2_qubits = evaluation_fits_dict[f"(qubits: 2, layers: 1)"].std_Kullback_Leibler_divergence_estimate
+        [[evaluation_fits_dict[f"(qubits: 1, layers: {no_layers}, version: {version_no})"].std_Kullback_Leibler_divergence_estimate
+          for no_layers in no_layers_list]
+         for version_no in range(1, end_version + 1)]
+    try:
+        std_KL_2_qubits_list = \
+            [evaluation_fits_dict[f"(qubits: 2, layers: 1, version: {version_no})"].std_Kullback_Leibler_divergence_estimate
+             for version_no in range(1, end_version + 1)]
+    except KeyError:
+        std_KL_2_qubits_list = [np.nan]
+
     min_diff_prob_rare_trajectory_1_qubit_list = \
-        [(evaluation_reweighted_dynamics.prob_rare_trajectory
-          - evaluation_fits_dict[f"(qubits: 1, layers: {no_layers})"].prob_rare_trajectory_selected)
-         for no_layers in no_layers_list]
-    min_diff_prob_rare_trajectory_2_qubits = \
-        (evaluation_reweighted_dynamics.prob_rare_trajectory
-         - evaluation_fits_dict[f"(qubits: 2, layers: 1)"].prob_rare_trajectory_selected)
+        [[(evaluation_reweighted_dynamics.prob_rare_trajectory
+           - evaluation_fits_dict[f"(qubits: 1, layers: {no_layers}, version: {version_no})"].prob_rare_trajectory_selected)
+          for no_layers in no_layers_list]
+         for version_no in range(1, end_version + 1)]
+    try:
+        min_diff_prob_rare_trajectory_2_qubits_list = \
+            [(evaluation_reweighted_dynamics.prob_rare_trajectory
+              - evaluation_fits_dict[f"(qubits: 2, layers: 1, version: {version_no})"].prob_rare_trajectory_selected)
+             for version_no in range(1, end_version + 1)]
+    except KeyError:
+        min_diff_prob_rare_trajectory_2_qubits_list = [np.nan]
 
     # plot results
+    if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
+        file_name = (f"{path_plots}/plot_table_results_Fourier_series_fits.pdf")
+
+    if fitting_parameters == "random_Fourier_features":
+        file_name = (f"{path_plots}/plot_table_results_Fourier_series_fits_"
+                     f"random_Fourier_features_{no_random_Fourier_features}.pdf")
+
     plot_xy_vs_no_layers(no_layers_list, "$D(P_{\\theta}\Vert P_W)$",
-                         "$\Delta P(x_T = 0)$", "min",
-                         min_KL_1_qubit_list, min_KL_2_qubits, mean_KL_1_qubit_list, mean_KL_2_qubits,
-                         std_KL_1_qubit_list, std_KL_2_qubits,
-                         min_diff_prob_rare_trajectory_1_qubit_list, min_diff_prob_rare_trajectory_2_qubits,
-                         save_fig_as=f"{path_plots}/plot_table_results_Fourier_series_fits.pdf")
+                         "$\Delta P(x_T = 0)$",
+                         min_KL_1_qubit_list, min_KL_2_qubits_list, mean_KL_1_qubit_list, mean_KL_2_qubits_list,
+                         std_KL_1_qubit_list, std_KL_2_qubits_list,
+                         min_diff_prob_rare_trajectory_1_qubit_list, min_diff_prob_rare_trajectory_2_qubits_list,
+                         save_fig_as=file_name)
 
 
     logger.info("Main script finished.")
@@ -271,5 +367,9 @@ def main(param_file_name: str = "config_publication.json5") -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run Fourier series analysis with optional specification of config file.")
+    parser.add_argument("--config_file_name", type=str, default="config_publication.json5",
+                        help="Path to the config file (default: config_publication.json5)")
+    args = parser.parse_args()
+    main(args.config_file_name)
 

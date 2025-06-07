@@ -26,17 +26,21 @@ pip install -r requirements.txt
 ## Usage
 
 In order to reproduce all results of this code including the plots used in the publication, run the script "main.py" 
-in the terminal or console:
+in the terminal or console,
 
 ```
 python3 main.py
 ```
 
-If you wish, you can change the configuration parameters for the features listed above in the configfile 
-"config_publication.json5" (for the meaning of the parameters see the comments therein).  
-In order to keep track of your changes, it might be advisable to copy "config_publication.json5", rename it, 
-change the parameters in the renamed configfile and change the keyword argument "param_file_name" in the 
-function call "main()" in main.py accordingly.
+which will run the code with the default configuration file "config_publication.json5".
+Alternatively you can run
+
+```
+python3 main.py --config_file_name <your_config_file_name>
+```
+
+where `<your_config_file_name>` is the name of the json5 configuration file you want to use 
+(for the meaning of the parameters within a configuration file see the comments in "config_publication.json5").
 
 When you run the script, the steps of the computations conducted and some details will be logged, by default in the file 
 "script.log".  

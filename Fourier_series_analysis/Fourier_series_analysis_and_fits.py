@@ -1014,7 +1014,7 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                 self.fit_policy(softmax_policy_random_Fourier_features,
                                 *constant_args, **constant_kwargs,
                                 no_amplitudes=self.no_random_Fourier_features,
-                                no_phases=(self.no_random_Fourier_features - c_00_is_nonzero)
+                                no_phases=(self.no_random_Fourier_features - c_00_is_nonzero))
 
 
     @property
@@ -1279,7 +1279,7 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
         assert no_features <= no_pos_freqs * no_freqs - no_layers, \
             "no_features <= no_pos_freqs * no_freqs - no_layers is required"
 
-        indicator_nonzero_features = np.zeros(no_pos_freqs * no_freqs)
+        indicator_nonzero_features = np.zeros(no_pos_freqs * no_freqs, dtype=bool)
 
         # choose nonzero random Fourier features
         if prob_dist == "uniform":
