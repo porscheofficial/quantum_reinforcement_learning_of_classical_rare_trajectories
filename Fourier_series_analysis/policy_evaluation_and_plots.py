@@ -79,7 +79,7 @@ def convert_dict_to_data_frame(data: dict) -> pd.DataFrame:
 
 def plot_as_heatmap(two_dim_array: np.ndarray, colorbar_label: str, title="", save_fig_as="",
                     plot_mask: np.ndarray = None, plot_complement=False, plot_data: pd.DataFrame = None,
-                    value_limits: tuple[float, float] = None) -> None:
+                    value_limits: tuple[float, float] = None, show_plot=False) -> None:
     """
     Plot 2D array as function of t and x in form of a heatmap and save it as PDF.
 
@@ -152,7 +152,9 @@ def plot_as_heatmap(two_dim_array: np.ndarray, colorbar_label: str, title="", sa
         if save_fig_as != "":
             pdf.savefig(bbox_inches="tight")
 
-        plt.show()
+        if show_plot:
+            plt.show()
+
         plt.close()
 
         # add table of data associated to plot as a second page
@@ -167,7 +169,7 @@ def plot_as_heatmap(two_dim_array: np.ndarray, colorbar_label: str, title="", sa
 
 
 def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as: str, second_no_layers: int = None,
-                        second_coeffs_samples: np.ndarray = None) -> None:
+                        second_coeffs_samples: np.ndarray = None, show_plot=False) -> None:
     """
     Visualize Fourier coefficients as scatter plot.
     This function consists of code adjusted from the PennyLane demo by Schuld and Meyer
@@ -247,16 +249,19 @@ def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as:
     # save plot
     fig.savefig(save_fig_as, bbox_inches="tight")
 
-    plt.show()
+    if show_plot:
+        plt.show()
+
     plt.close()
 
 
-def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y_label: str, opt: str,
-                         opt_x_1_qubit_list: list, opt_x_2_qubits: float,
-                         mean_x_1_qubit_list: list, mean_x_2_qubits: float,
-                         std_x_1_qubit_list: list, std_x_2_qubits: float,
-                         opt_y_1_qubit_list: list, opt_y_2_qubits: float,
-                         save_fig_as="plot_table_results_Fourier_series_fits.pdf") -> None:
+def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y_label: str,
+                         opt_x_1_qubit_list: list, opt_x_2_qubits_list: list,
+                         mean_x_1_qubit_list: list, mean_x_2_qubits_list: list,
+                         std_x_1_qubit_list: list, std_x_2_qubits_list: list,
+                         opt_y_1_qubit_list: list, opt_y_2_qubits_list: list,
+                         opt_x="min", opt_y="max",
+                         save_fig_as="plot_table_results_Fourier_series_fits.pdf", show_plot=False) -> None:
     """
     Create plot of quantities x and y for fitted parameterized dynamics of parameterized quantum circuits (PQCs)
     with 1 and 2 qubits vs. #data-uploading layers of PQCs.
@@ -266,34 +271,57 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         no_layers_list: list of #layers of PQCs
         quantity_x_label: label of quantity x
         quantity_y_label: label of quantity y
-        opt: optimal values of x given by "max" or "min"
         opt_x_1_qubit_list: list of optimal values of x for 1-qubit PQCs
-        opt_x_2_qubits: optimal value of x for 2-qubit PQCs with 1 layer
+        opt_x_2_qubits_list: list of optimal values of x for 2-qubit PQCs with 1 layer
         mean_x_1_qubit_list: list of mean values of x for 1-qubit PQCs
-        mean_x_2_qubits: mean value of x for 2-qubit PQCs with 1 layer
+        mean_x_2_qubits_list: list of mean values of x for 2-qubit PQCs with 1 layer
         std_x_1_qubit_list: list of standard deviations of x for 1-qubit PQCs
-        std_x_2_qubits: standard deviation of x for 2-qubit PQCs with 1 layer
+        std_x_2_qubits_list: list of standard deviations of x for 2-qubit PQCs with 1 layer
         opt_y_1_qubit_list: list of optimal values of y for 1-qubit PQCs
-        opt_y_2_qubits: optimal value of y for 2-qubit PQCs with 1 layer
+        opt_y_2_qubits_list: list of optimal values of y for 2-qubit PQCs with 1 layer
+        opt_x: whether to plot optimal values of x given by "max" or "min"
         save_fig_as: name of PDF file to save plot
+        show_plot: whether to show plot or not
 
     Returns:
         None
     """
 
-    assert len(no_layers_list) == len(opt_x_1_qubit_list) == len(mean_x_1_qubit_list) == len(std_x_1_qubit_list), \
-        ("Length of lists no_layers_list, opt_x_1_qubit_list, mean_x_1_qubit_list, and std_x_1_qubit_list must be "
-         "equal.")
+    assert len(opt_x_1_qubit_list) == len(mean_x_1_qubit_list) == len(std_x_1_qubit_list) == len(opt_y_1_qubit_list), \
+        ("Lengths of lists opt_x_1_qubit_list, mean_x_1_qubit_list, std_x_1_qubit_list, and opt_y_1_qubit_list "
+         "must be equal.")
+    assert len(no_layers_list) == len(opt_x_1_qubit_list[0]) == len(mean_x_1_qubit_list[0]) == len(std_x_1_qubit_list[0]), \
+        ("Lengths of lists no_layers_list, opt_x_1_qubit_list[0], mean_x_1_qubit_list[0], and std_x_1_qubit_list[0] "
+         "must be equal.")
+    assert len(opt_x_2_qubits_list) == len(mean_x_2_qubits_list) == len(std_x_2_qubits_list) == len(opt_y_2_qubits_list), \
+        ("Lengths of lists opt_x_2_qubits_list, mean_x_2_qubits_list, std_x_2_qubits_list, and opt_y_2_qubits_list "
+         "must be equal.")
+
+    assert opt_x == "min" or opt_x == "max", f"Invalid opt_x {opt_x}, must be 'min' or 'max'."
+    assert opt_y == "min" or opt_y == "max", f"Invalid opt_y {opt_y}, must be 'min' or 'max'."
 
     fig, axes_1 = plt.subplots(1, 3, width_ratios=[3, 1, 1])
     plt.subplots_adjust(wspace=0.15)  # adjusts width between subplots
+
+    # preprocess data for plotting
+    opt_x_1_qubit = np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0)
+    mean_x_1_qubit = np.mean(mean_x_1_qubit_list, axis=0)
+    std_x_1_qubit = np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) +
+                            np.power(np.std(mean_x_1_qubit_list, axis=0), 2))
+    opt_y_1_qubit = np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0)
+
+    opt_x_2_qubits = np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0)
+    mean_x_2_qubits = np.mean(mean_x_2_qubits_list, axis=0)
+    std_x_2_qubits = np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0) +
+                             np.power(np.std(std_x_2_qubits_list, axis=0), 2))
+    opt_y_2_qubits = np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0)
 
     # plot quantity x with error bars
     color = colors[0]
 
     for ax in axes_1:
-        ax.errorbar(no_layers_list, opt_x_1_qubit_list, fmt='D', color=color)
-        ax.errorbar(no_layers_list, mean_x_1_qubit_list, yerr=std_x_1_qubit_list, fmt='o', color=color)
+        ax.errorbar(no_layers_list, opt_x_1_qubit, fmt='D', color=color)
+        ax.errorbar(no_layers_list, mean_x_1_qubit, yerr=std_x_1_qubit, fmt='o', color=color)
 
         ax.errorbar(1, opt_x_2_qubits, fmt='D', mec=color, mfc='none')
         ax.errorbar(1, mean_x_2_qubits, yerr=std_x_2_qubits, fmt='o', mec=color, mfc='none')
@@ -305,7 +333,7 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     color = colors[1]
 
     for ax in axes_2:
-        ax.errorbar(no_layers_list, opt_y_1_qubit_list, fmt='s', color=color)
+        ax.errorbar(no_layers_list, opt_y_1_qubit, fmt='s', color=color)
         ax.errorbar(1, opt_y_2_qubits, fmt='s', mec=color, mfc='none')
 
     # adjust plots
@@ -315,25 +343,17 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         axes[1].spines['right'].set_visible(False)
         axes[2].spines['left'].set_visible(False)
 
-    axes_1[0].set_xlim(0., 6.)
-    axes_1[1].set_xlim(9., 11.)
-    axes_1[2].set_xlim(14., 16.)
+    all_opt_x_values = np.concatenate((opt_x_1_qubit, [opt_x_2_qubits]))
+    all_mean_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
+    all_std_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
 
-    all_opt_x_values = opt_x_1_qubit_list + [opt_x_2_qubits]
-    all_mean_x_values = mean_x_1_qubit_list + [mean_x_2_qubits]
-    all_std_x_values = std_x_1_qubit_list + [std_x_2_qubits]
+    all_x_values = np.concatenate((all_opt_x_values, all_mean_x_values + all_std_x_values))
 
-    all_x_values = all_opt_x_values + [all_mean_x_values[i] + all_std_x_values[i]
-                                       for i in range(len(all_opt_x_values))]
-
-    if opt == "max":
-        ylim_x = 1.1 * np.min(all_x_values)
-
-    elif opt == "min":
-        ylim_x = 1.1 * np.max(all_x_values)
+    if opt_x == "max":
+        ylim_x = 1.1 * np.nanmin(all_x_values)
 
     else:
-        raise ValueError(f"Invalid opt {opt}.")
+        ylim_x = 1.1 * np.nanmax(all_x_values)
 
     for ax in axes_1:
         ax.set_ylim(0.0, ylim_x)
@@ -341,12 +361,29 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     for ax in axes_2:
         ax.set_ylim(0.0, 1.0)
 
-    axes_1[0].set_xticks([1, 2, 3, 4, 5])
-    axes_1[0].set_xticklabels([1, 2, 3, 4, 5])
-    axes_1[1].set_xticks([10])
-    axes_1[1].set_xticklabels([10])
-    axes_1[2].set_xticks([15])
-    axes_1[2].set_xticklabels([15])
+    if no_layers_list ==[1, 2, 3, 4, 5, 10, 15]:
+        axes_1[0].set_xlim(0., 6.)
+        axes_1[1].set_xlim(9., 11.)
+        axes_1[2].set_xlim(14., 16.)
+
+        axes_1[0].set_xticks([1, 2, 3, 4, 5])
+        axes_1[0].set_xticklabels([1, 2, 3, 4, 5])
+        axes_1[1].set_xticks([10])
+        axes_1[1].set_xticklabels([10])
+        axes_1[2].set_xticks([15])
+        axes_1[2].set_xticklabels([15])
+
+    elif no_layers_list == [4, 5, 6, 7, 8, 9, 10, 15]:
+        axes_1[0].set_xlim(0., 9.5)
+        axes_1[1].set_xlim(9.5, 10.5)
+        axes_1[2].set_xlim(14.5, 15.5)
+
+        axes_1[0].set_xticks([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        axes_1[0].set_xticklabels([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        axes_1[1].set_xticks([10])
+        axes_1[1].set_xticklabels([10])
+        axes_1[2].set_xticks([15])
+        axes_1[2].set_xticklabels([15])
 
     tick_step = ylim_x / 5.
     axes_1[0].set_yticks([0., tick_step, 2 * tick_step, 3 * tick_step, 4 * tick_step, 5 * tick_step])
@@ -376,7 +413,9 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
 
     fig.savefig(save_fig_as, bbox_inches="tight")
 
-    plt.show()
+    if show_plot:
+        plt.show()
+
     plt.close()
 
 
