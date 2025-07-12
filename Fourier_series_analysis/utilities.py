@@ -73,21 +73,6 @@ def get_file_names_with_version(base_file_name: str, no_versions: int, directory
             for version_no in range(start_version, end_version + 1)], end_version
 
 
-def import_params_from_json5(path: str) -> dict:
-    """
-    Import parameters from a JSON5 file and return them as a dictionary.
-
-    Parameters:
-        path: path to the JSON5 file
-
-    Returns:
-        params: dict with parameter names and values as dict key-value pairs
-    """
-    with open(path, 'r') as file:
-        params = json5.load(file)
-    return params
-
-
 def convert_to_and_save_latex_string(sympy_expr: sp.Expr, file_name: str, comment: str) -> None:
     """
     Convert sympy expression to equivalent LaTeX string and save it in txt file.
