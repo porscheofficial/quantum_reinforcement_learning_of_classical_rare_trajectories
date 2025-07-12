@@ -92,6 +92,13 @@ class Config(BaseModel):
 
 
     @model_validator(mode="after")
+    def must_of_same_parity(self):
+        if not self.T % 2 == self.x_T % 2:
+            raise ValueError("parameters T and x_T must have the same parity (both even or both odd)")
+        return self
+
+
+    @model_validator(mode="after")
     def must_not_be_none_if_random_Fourier_features(self):
         if self.fitting_parameters == "random_Fourier_features":
             if self.no_random_Fourier_features is None:
