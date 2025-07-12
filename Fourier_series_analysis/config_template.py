@@ -11,31 +11,49 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 """
-import copy
-from typing import Literal
 
+
+import copy
 import json5
-from pydantic import BaseModel, field_validator, ValidationInfo, model_validator
 from pathlib import Path
+from typing import Literal
+from pydantic import BaseModel, field_validator, ValidationInfo, model_validator
 
 
 class Config(BaseModel):
+    # time steps of random walk
     T: int
+    # reward/return function parameter
     s: float
+    # required final position of rare trajectory
     x_T: int
+    # random walk prob. to move one step up
     prob_step_up: float
+    # list of #qubits in the parameterized quantum circuit (PQC)
     no_qubits_list: list[int]
+    # #sets of randomly chosen variational angles = #times Fourier coefficients are computed
     no_samples_variational_params: int
+    # list of #data-uploading layers in the PQC
     no_layers_list: list[int]
+    # #sets of randomly chosen initial values for fitting parameters = #times policies/parameterized probs. are fitted to reweighted probs. P_W
     no_fits: int
+    # fitting parameters to be used
     fitting_parameters: Literal["Fourier_coefficients", "variational_angles", "random_Fourier_features"]
+    # #random Fourier features to use for fitting
     no_random_Fourier_features: int | None = None
+    # (no comment in JSON5 for this field)
     no_choices_random_Fourier_features: int | None = None
+    # maximal #optimization steps; if None, use default stopping criterion for optimization with scipy.optimize.minimize
     max_optimization_steps: int | None = None
+    # type of cost function to use for fitting
     cost_func_type: Literal["leastsq", "KL_divergence"]
+    # #trajectories used for cost_func_type='trajectory_KL_divergence'
     no_trajectories_cost_func: int | None = None
+    # #trajectories used for estimating properties of fitted policies
     no_trajectories_policy_evaluation: int
+    # criterion to select policy from no_fits many fits
     policy_selection_criterion: Literal["max_prob_rare_trajectory", "max_avg_return", "min_KL_divergence", "min_MSE"]
+    # if True, recompute previous stored results
     recompute_stored: bool = False
 
 
