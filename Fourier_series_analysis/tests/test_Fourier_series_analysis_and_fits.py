@@ -13,6 +13,12 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 """
 
 
+import sys
+from pathlib import Path
+
+main_directory = Path(__file__).resolve().parent.parent
+sys.path.append(str(main_directory))
+
 import numpy as np
 import pytest
 from Fourier_series_analysis_and_fits import ParameterizedDynamicsFits
@@ -60,6 +66,9 @@ from Fourier_series_analysis_and_fits import ParameterizedDynamicsFits
 )
 def test_calc_params_array_random_Fourier_features_behavior(no_layers, indicator_nonzero_features, original_params_array,
                                                             expected_amplitudes, expected_phases):
+    """
+    Test function for ParameterizedDynamicsFits.calc_params_array_random_Fourier_features.
+    """
     result = ParameterizedDynamicsFits.calc_params_array_random_Fourier_features(no_layers, original_params_array,
                                                                                  indicator_nonzero_features)
 

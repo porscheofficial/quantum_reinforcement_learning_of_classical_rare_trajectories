@@ -31,6 +31,28 @@ logger = get_logger("main.py")
 
 def main(config_file_name: str = "config_publication.json5") -> None:
     logger.info("Starting main script.")
+    # config with parameters of computations (see comments in class Config or in JSON5 file for their meaning)
+    config = Config.from_json5(config_file_name)
+
+    params = config.__dict__
+    T = config.T
+    s = config.s
+    x_T = config.x_T
+    prob_step_up = config.prob_step_up
+    no_qubits_list = config.no_qubits_list
+    no_samples_variational_params = config.no_samples_variational_params
+    no_layers_list = config.no_layers_list
+    no_fits = config.no_fits
+    fitting_parameters = config.fitting_parameters
+    no_random_Fourier_features = config.no_random_Fourier_features
+    no_choices_random_Fourier_features = config.no_choices_random_Fourier_features
+    max_optimization_steps = config.max_optimization_steps
+    cost_func_type = config.cost_func_type
+    no_trajectories_cost_func = config.no_trajectories_cost_func
+    no_trajectories_policy_evaluation = config.no_trajectories_policy_evaluation
+    policy_selection_criterion = config.policy_selection_criterion
+    recompute_stored = config.recompute_stored
+
 
     logger.info(f"1. Creating folders and loading parameters of computations from {config_file_name}.")
     path_script = os.path.dirname(os.path.abspath(__file__))  # get directory of current script
