@@ -29,7 +29,7 @@ from value_functions import ValueFunction
 logger = get_logger("main.py")
 
 
-def main(config_file_name: str = "config_publication.json5") -> None:
+def main(config_file_name: str = "config_publication.json5", create_plots=True) -> None:
     logger.info("Starting main script.")
     # config with parameters of computations (see comments in class Config or in JSON5 file for their meaning)
     config = Config.from_json5(config_file_name)
@@ -226,6 +226,11 @@ def main(config_file_name: str = "config_publication.json5") -> None:
                                                       f"version: {file_name.split('_v')[1].split('.')[0]})")] = \
                         parameterized_dynamics_fits
 
+
+    if not create_plots:
+        logger.info("Skipping plots creation as requested.")
+        logger.info("Main script finished.")
+        return
 
     logger.info(f"8. Evaluation of fitted policies.")
     evaluation_fits_dict = {}
