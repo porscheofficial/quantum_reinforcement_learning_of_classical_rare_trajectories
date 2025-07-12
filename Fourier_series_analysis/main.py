@@ -15,12 +15,14 @@ import argparse
 import os
 import shutil
 import numpy as np
+
+from config_template import Config
 from logging_config import get_logger
 from policy_evaluation_and_plots import PolicyEvaluation, plot_as_heatmap, convert_dict_to_data_frame, \
     plot_xy_vs_no_layers, plot_Fourier_coeffs
 from reweighted_dynamics import ReweightedDynamics
 from Fourier_series_analysis_and_fits import ParameterizedDynamicsFits, FourierSeriesAnalysis
-from utilities import get_file_names_with_version, load_or_compute_obj, import_params_from_json5, convert_to_and_save_latex_string
+from utilities import get_file_names_with_version, load_or_compute_obj, convert_to_and_save_latex_string
 from value_functions import ValueFunction
 
 
@@ -42,27 +44,6 @@ def main(config_file_name: str = "config_publication.json5") -> None:
 
     path_config = os.path.join(path_script, f"results/{config_folder_name}")
     shutil.copy(config_file_name, path_config)
-
-    params = import_params_from_json5(config_file_name)
-
-    # parameters of computations (see comments in CSV file for their meaning)
-    T = params["T"]
-    s = params["s"]
-    x_T = params["x_T"]
-    prob_step_up = params["prob_step_up"]
-    no_qubits_list = params["no_qubits_list"]
-    no_samples_variational_params = params["no_samples_variational_params"]
-    no_layers_list = params["no_layers_list"]
-    no_fits = params["no_fits"]
-    fitting_parameters = params["fitting_parameters"]
-    no_random_Fourier_features = params["no_random_Fourier_features"]
-    no_choices_random_Fourier_features = params["no_choices_random_Fourier_features"]
-    max_optimization_steps = params["max_optimization_steps"]
-    cost_func_type = params["cost_func_type"]
-    no_trajectories_cost_func = params["no_trajectories_cost_func"]
-    no_trajectories_policy_evaluation = params["no_trajectories_policy_evaluation"]
-    policy_selection_criterion = params["policy_selection_criterion"]
-    recompute_stored = params["recompute_stored"]
 
 
     logger.info(f"2. Computation of reweighted dynamics.")
