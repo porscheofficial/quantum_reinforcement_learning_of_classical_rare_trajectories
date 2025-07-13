@@ -261,7 +261,8 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
                          std_x_1_qubit_list: list, std_x_2_qubits_list: list,
                          opt_y_1_qubit_list: list, opt_y_2_qubits_list: list,
                          opt_x="min", opt_y="max",
-                         save_fig_as="plot_table_results_Fourier_series_fits.pdf", show_plot=False) -> None:
+                         save_fig_as="plot_table_results_Fourier_series_fits.pdf", show_plot=False,
+                         quantities_x_and_y_in_one_plot=True) -> None:
     """
     Create plot of quantities x and y for fitted parameterized dynamics of parameterized quantum circuits (PQCs)
     with 1 and 2 qubits vs. #data-uploading layers of PQCs.
@@ -282,6 +283,8 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         opt_x: whether to plot optimal values of x given by "max" or "min"
         save_fig_as: name of PDF file to save plot
         show_plot: whether to show plot or not
+        quantities_x_and_y_in_one_plot: if True, plot quantities x and y in one plot with two vertical axes,
+                                        if False, plot them in two separate plots side by side
 
     Returns:
         None
@@ -300,8 +303,6 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     assert opt_x == "min" or opt_x == "max", f"Invalid opt_x {opt_x}, must be 'min' or 'max'."
     assert opt_y == "min" or opt_y == "max", f"Invalid opt_y {opt_y}, must be 'min' or 'max'."
 
-    fig, axes_1 = plt.subplots(1, 3, width_ratios=[3, 1, 1])
-    plt.subplots_adjust(wspace=0.15)  # adjusts width between subplots
 
     # preprocess data for plotting
     opt_x_1_qubit = np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0)
@@ -316,33 +317,6 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
                              np.power(np.std(std_x_2_qubits_list, axis=0), 2))
     opt_y_2_qubits = np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0)
 
-    # plot quantity x with error bars
-    color = colors[0]
-
-    for ax in axes_1:
-        ax.errorbar(no_layers_list, opt_x_1_qubit, fmt='D', color=color)
-        ax.errorbar(no_layers_list, mean_x_1_qubit, yerr=std_x_1_qubit, fmt='o', color=color)
-
-        ax.errorbar(1, opt_x_2_qubits, fmt='D', mec=color, mfc='none')
-        ax.errorbar(1, mean_x_2_qubits, yerr=std_x_2_qubits, fmt='o', mec=color, mfc='none')
-
-    # create second vertical axis sharing same horizontal axis
-    axes_2 = [ax.twinx() for ax in axes_1]
-
-    # plot quantity y
-    color = colors[1]
-
-    for ax in axes_2:
-        ax.errorbar(no_layers_list, opt_y_1_qubit, fmt='s', color=color)
-        ax.errorbar(1, opt_y_2_qubits, fmt='s', mec=color, mfc='none')
-
-    # adjust plots
-    for axes in (axes_1, axes_2):
-        axes[0].spines['right'].set_visible(False)
-        axes[1].spines['left'].set_visible(False)
-        axes[1].spines['right'].set_visible(False)
-        axes[2].spines['left'].set_visible(False)
-
     all_opt_x_values = np.concatenate((opt_x_1_qubit, [opt_x_2_qubits]))
     all_mean_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
     all_std_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
@@ -355,68 +329,141 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     else:
         ylim_x = 1.1 * np.nanmax(all_x_values)
 
-    for ax in axes_1:
-        ax.set_ylim(0.0, ylim_x)
 
-    for ax in axes_2:
-        ax.set_ylim(0.0, 1.0)
+    if quantities_x_and_y_in_one_plot:
+        fig, axes_1 = plt.subplots(1, 3, width_ratios=[3, 1, 1])
+        plt.subplots_adjust(wspace=0.15)  # adjusts width between subplots
 
-    if no_layers_list ==[1, 2, 3, 4, 5, 10, 15]:
-        axes_1[0].set_xlim(0., 6.)
-        axes_1[1].set_xlim(9., 11.)
-        axes_1[2].set_xlim(14., 16.)
+        # plot quantity x with error bars
+        color = colors[0]
 
-        axes_1[0].set_xticks([1, 2, 3, 4, 5])
-        axes_1[0].set_xticklabels([1, 2, 3, 4, 5])
-        axes_1[1].set_xticks([10])
-        axes_1[1].set_xticklabels([10])
-        axes_1[2].set_xticks([15])
-        axes_1[2].set_xticklabels([15])
+        for ax in axes_1:
+            ax.errorbar(no_layers_list, opt_x_1_qubit, fmt='D', color=color)
+            ax.errorbar(no_layers_list, mean_x_1_qubit, yerr=std_x_1_qubit, fmt='o', color=color)
 
-    elif no_layers_list == [4, 5, 6, 7, 8, 9, 10, 15]:
-        axes_1[0].set_xlim(0., 9.5)
-        axes_1[1].set_xlim(9.5, 10.5)
-        axes_1[2].set_xlim(14.5, 15.5)
+            ax.errorbar(1, opt_x_2_qubits, fmt='D', mec=color, mfc='none')
+            ax.errorbar(1, mean_x_2_qubits, yerr=std_x_2_qubits, fmt='o', mec=color, mfc='none')
 
-        axes_1[0].set_xticks([1, 2, 3, 4, 5, 6, 7, 8, 9])
-        axes_1[0].set_xticklabels([1, 2, 3, 4, 5, 6, 7, 8, 9])
-        axes_1[1].set_xticks([10])
-        axes_1[1].set_xticklabels([10])
-        axes_1[2].set_xticks([15])
-        axes_1[2].set_xticklabels([15])
+        # create second vertical axis sharing same horizontal axis
+        axes_2 = [ax.twinx() for ax in axes_1]
 
-    tick_step = ylim_x / 5.
-    axes_1[0].set_yticks([0., tick_step, 2 * tick_step, 3 * tick_step, 4 * tick_step, 5 * tick_step])
-    axes_1[0].set_yticklabels([f"{x:.2f}" for x
-                               in [0., tick_step, 2 * tick_step, 3 * tick_step, 4 * tick_step, 5 * tick_step]])
+        # plot quantity y
+        color = colors[1]
 
-    color = colors[0]
-    axes_1[0].set_ylabel(quantity_x_label, color=color)
-    axes_1[0].tick_params(axis='y', labelcolor=color, which='both',
-                          labelleft=True, left=True, labelright=False, right=False)
-    axes_1[1].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
-    axes_1[2].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
+        for ax in axes_2:
+            ax.errorbar(no_layers_list, opt_y_1_qubit, fmt='s', color=color)
+            ax.errorbar(1, opt_y_2_qubits, fmt='s', mec=color, mfc='none')
 
-    color = colors[1]
-    axes_2[2].set_ylabel(quantity_y_label, color=color)
-    axes_2[0].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
-    axes_2[1].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
-    axes_2[2].tick_params(axis='y', labelcolor=color, which='both',
-                          labelleft=False, left=False, labelright=True, right=True)
+        # adjust plots
+        for axes in (axes_1, axes_2):
+            axes[0].spines['right'].set_visible(False)
+            axes[1].spines['left'].set_visible(False)
+            axes[1].spines['right'].set_visible(False)
+            axes[2].spines['left'].set_visible(False)
 
-    fig.add_subplot(111, frameon=False)
-    # hide tick and tick label of the big axis
-    plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-    plt.xlabel('# data-uploading layers')
+        for ax in axes_1:
+            ax.set_ylim(0.0, ylim_x)
 
-    fig.tight_layout()
+        for ax in axes_2:
+            ax.set_ylim(0.0, 1.0)
 
-    fig.savefig(save_fig_as, bbox_inches="tight")
+        if no_layers_list ==[1, 2, 3, 4, 5, 10, 15]:
+            axes_1[0].set_xlim(0., 6.)
+            axes_1[1].set_xlim(9., 11.)
+            axes_1[2].set_xlim(14., 16.)
 
-    if show_plot:
-        plt.show()
+            axes_1[0].set_xticks([1, 2, 3, 4, 5])
+            axes_1[0].set_xticklabels([1, 2, 3, 4, 5])
+            axes_1[1].set_xticks([10])
+            axes_1[1].set_xticklabels([10])
+            axes_1[2].set_xticks([15])
+            axes_1[2].set_xticklabels([15])
 
-    plt.close()
+        elif no_layers_list == [4, 5, 6, 7, 8, 9, 10, 15]:
+            axes_1[0].set_xlim(0., 9.5)
+            axes_1[1].set_xlim(9.5, 10.5)
+            axes_1[2].set_xlim(14.5, 15.5)
+
+            axes_1[0].set_xticks([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            axes_1[0].set_xticklabels([1, 2, 3, 4, 5, 6, 7, 8, 9])
+            axes_1[1].set_xticks([10])
+            axes_1[1].set_xticklabels([10])
+            axes_1[2].set_xticks([15])
+            axes_1[2].set_xticklabels([15])
+
+        tick_step = ylim_x / 5.
+        axes_1[0].set_yticks([0., tick_step, 2 * tick_step, 3 * tick_step, 4 * tick_step, 5 * tick_step])
+        axes_1[0].set_yticklabels([f"{x:.2f}" for x
+                                   in [0., tick_step, 2 * tick_step, 3 * tick_step, 4 * tick_step, 5 * tick_step]])
+
+        color = colors[0]
+        axes_1[0].set_ylabel(quantity_x_label, color=color)
+        axes_1[0].tick_params(axis='y', labelcolor=color, which='both',
+                              labelleft=True, left=True, labelright=False, right=False)
+        axes_1[1].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
+        axes_1[2].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
+
+        color = colors[1]
+        axes_2[2].set_ylabel(quantity_y_label, color=color)
+        axes_2[0].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
+        axes_2[1].tick_params(axis='y', labelleft=False, left=False, labelright=False, right=False)
+        axes_2[2].tick_params(axis='y', labelcolor=color, which='both',
+                              labelleft=False, left=False, labelright=True, right=True)
+
+        fig.add_subplot(111, frameon=False)
+        # hide tick and tick label of the big axis
+        plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+        plt.xlabel('# data-uploading layers')
+
+        fig.tight_layout()
+
+        fig.savefig(save_fig_as, bbox_inches="tight")
+
+        if show_plot:
+            plt.show()
+
+        plt.close()
+    else:
+        # two separate plots side by side: left for x, right for y
+        fig, (ax_x, ax_y) = plt.subplots(1, 2, figsize=(12, 5))
+
+        # plot x
+        color_x = colors[0]
+        ax_x.errorbar(no_layers_list,
+                      np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0),
+                      fmt='D', color=color_x)
+        ax_x.errorbar(no_layers_list, np.mean(mean_x_1_qubit_list, axis=0),
+                      yerr=np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0)
+                                   + np.power(np.std(mean_x_1_qubit_list, axis=0), 2)),
+                      fmt='o', color=color_x)
+        ax_x.errorbar(1, np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0),
+                      fmt='D', mec=color_x, mfc='none')
+        ax_x.errorbar(1, np.mean(mean_x_2_qubits_list, axis=0),
+                      yerr=np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0)
+                                   + np.power(np.std(std_x_2_qubits_list, axis=0), 2)),
+                      fmt='o', mec=color_x, mfc='none')
+        ax_x.set_ylabel(quantity_x_label, color=color_x)
+        ax_x.set_ylim(0.0, ylim_x)
+        ax_x.set_xlabel('# data-uploading layers')
+        ax_x.tick_params(axis='y', labelcolor=color_x)
+
+        # plot y
+        color_y = colors[1]
+        ax_y.errorbar(no_layers_list,
+                      np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0),
+                      fmt='s', color=color_y)
+        ax_y.errorbar(1, np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0),
+                      fmt='s', mec=color_y, mfc='none')
+        ax_y.set_ylabel(quantity_y_label, color=color_y)
+        ax_y.set_ylim(0.0, 1.0)
+        ax_y.set_xlabel('# data-uploading layers')
+        ax_y.tick_params(axis='y', labelcolor=color_y)
+
+        fig.tight_layout()
+        fig.savefig(save_fig_as, bbox_inches="tight")
+        if show_plot:
+            plt.show()
+        plt.close()
 
 
 class PolicyEvaluation(ConsistentParametersClass):
