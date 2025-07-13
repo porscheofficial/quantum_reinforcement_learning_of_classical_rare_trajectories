@@ -12,8 +12,6 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER I
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 """
 import argparse
-import os
-import shutil
 import numpy as np
 
 from config_template import Config
@@ -22,7 +20,7 @@ from policy_evaluation_and_plots import PolicyEvaluation, plot_as_heatmap, conve
     plot_xy_vs_no_layers, plot_Fourier_coeffs
 from reweighted_dynamics import ReweightedDynamics
 from Fourier_series_analysis_and_fits import ParameterizedDynamicsFits, FourierSeriesAnalysis
-from utilities import get_file_names_with_version, load_or_compute_obj, convert_to_and_save_latex_string
+from utilities import get_file_names_with_version, load_or_compute_obj, convert_to_and_save_latex_string, prepare_results_dir
 from value_functions import ValueFunction
 
 
@@ -54,19 +52,9 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
     recompute_stored = config.recompute_stored
 
 
-    logger.info(f"1. Creating folders and loading parameters of computations from {config_file_name}.")
-    path_script = os.path.dirname(os.path.abspath(__file__))  # get directory of current script
-    config_folder_name = config_file_name.split(".")[0]
-
-    path_computations = os.path.join(path_script, f"results/{config_folder_name}/computations")
-    os.makedirs(path_computations, exist_ok=True)
-
-    path_plots = os.path.join(path_script, f"results/{config_folder_name}/plots")
-    os.makedirs(path_plots, exist_ok=True)
-
-    path_config = os.path.join(path_script, f"results/{config_folder_name}")
-    shutil.copy(config_file_name, path_config)
-
+    logger.info(f"1. Prepare results directory (and its subdirectories) and loading parameters of computations from "
+                f"{config_file_name}.")
+    path_computations, path_plots = prepare_results_dir(config_file_name)
 
     logger.info(f"2. Computation of reweighted dynamics.")
     reweighted_dynamics = \
