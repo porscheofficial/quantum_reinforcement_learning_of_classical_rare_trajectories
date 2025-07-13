@@ -206,7 +206,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
                                         file_name, params, recompute=recompute_stored)
 
                 if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
-                    parameterized_dynamics_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, version: 1")] = \
+                    parameterized_dynamics_fits_dict[f"(qubits: {no_qubits}, layers: {no_layers}, version: 1)"] = \
                         parameterized_dynamics_fits
 
                 if fitting_parameters == "random_Fourier_features":
@@ -266,7 +266,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
 
 
                 if fitting_parameters in ("Fourier_coefficients", "variational_angles"):
-                    evaluation_fits_dict[(f"(qubits: {no_qubits}, layers: {no_layers}, version: 1")] = evaluation_fits
+                    evaluation_fits_dict[f"(qubits: {no_qubits}, layers: {no_layers}, version: 1)"] = evaluation_fits
 
                     plot_data = convert_dict_to_data_frame({"qubits": no_qubits, "layers": no_layers, "no_fits": no_fits,
                                                             "fitting_parameters": fitting_parameters,
@@ -355,7 +355,8 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
                          min_KL_1_qubit_list, min_KL_2_qubits_list, mean_KL_1_qubit_list, mean_KL_2_qubits_list,
                          std_KL_1_qubit_list, std_KL_2_qubits_list,
                          min_diff_prob_rare_trajectory_1_qubit_list, min_diff_prob_rare_trajectory_2_qubits_list,
-                         save_fig_as=file_name)
+                         save_fig_as=file_name, quantities_x_and_y_in_one_plot=False)
+    # TODO: remove 2-qubit and 15-data-uploading-layers data
 
 
     logger.info("Main script finished.")
