@@ -23,6 +23,8 @@ import warnings
 from typing import Callable, List, Tuple
 from scipy.optimize import minimize
 from sympy.physics.quantum import TensorProduct
+
+from utilities import InfoMessage
 from logging_config import get_logger
 from policy_evaluation_and_plots import PolicyEvaluation
 from utilities import einsum_subscripts, ProgressBar, ConsistentParametersClass
@@ -1473,6 +1475,8 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                 min_residual_cost = residual_cost_list[n]
                 optimized_params_min = params
 
+        warnings.warn(f"min_residual_cost = {min_residual_cost}", InfoMessage)
+
         return fitted_policies_array, optimized_params_min
 
 
@@ -1681,7 +1685,7 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
         # fit by minimizing cost function
         if max_optimization_steps is None:
-            result = minimize(cost_func, params_initial_guess, bounds=params_bounds)
+            result = minimize(cost_func, params_initial_guess, bounds=params_bounds, method='L-BFGS-B')
 
         else:
             result = minimize(cost_func, params_initial_guess, bounds=params_bounds, method='L-BFGS-B',
