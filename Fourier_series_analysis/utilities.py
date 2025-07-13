@@ -13,16 +13,40 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 """
 import glob
 import os
+import shutil
 import time
+import _pickle
 import json5
 import numpy as np
-import _pickle
 import sympy as sp
+from pathlib import Path
 from abc import ABC, abstractmethod
 from logging_config import get_logger
 
 
 logger = get_logger("utilities.py")
+
+
+def prepare_results_dir(config_file_name: str, dump_dict: dict = None) -> tuple[str, str]:
+    path_script = Path(__file__).resolve().parent  # get directory of current script
+    config_folder_name = Path(config_file_name).stem
+
+    path_computations = path_script / "results" / config_folder_name / "computations"
+    path_computations.mkdir(parents=True, exist_ok=True)
+
+    path_plots = path_script / "results" / config_folder_name / "plots"
+    path_plots.mkdir(parents=True, exist_ok=True)
+
+    path_config = path_script / "results" / config_folder_name
+
+    if dump_dict is not None:
+        with open(path_config / config_file_name, 'w') as f:
+            json5.dump(dump_dict, f, indent=4)
+
+    else:
+        shutil.copy(config_file_name, path_config)
+
+    return path_computations, path_plots
 
 
 def get_file_names_with_version(base_file_name: str, no_versions: int, directory: str, include_existing_versions=True,
