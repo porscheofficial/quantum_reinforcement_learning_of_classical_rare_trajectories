@@ -1470,6 +1470,7 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
             # search for optimized parameters with minimal residual cost
             if residual_cost_list[n] < min_residual_cost:
+                min_residual_cost = residual_cost_list[n]
                 optimized_params_min = params
 
         return fitted_policies_array, optimized_params_min
