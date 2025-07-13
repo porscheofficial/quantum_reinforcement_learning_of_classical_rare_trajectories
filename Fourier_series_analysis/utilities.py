@@ -406,3 +406,10 @@ class ProgressBar:
 
         # clear line
         print(f"\x1b[1K\r  {self.task_description} [{ProgressBar.format_delta_time(time.time() - self.start_time)}]")
+
+
+class InfoMessage(Warning):
+    """
+    Custom warning class for informational messages.
+    """
+    pass
