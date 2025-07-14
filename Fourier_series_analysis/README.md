@@ -1,7 +1,8 @@
 # Quantum reinforcement learning of classical rare dynamics: analysis via Fourier series
 
 This repository contains the code used in the publication "Quantum reinforcement learning (QRL) of classical rare dynamics:
-Enhancement by intrinsic Fourier features"  (**TODO**: add DOI) to analyze its results via Fourier series.  
+Enhancement by intrinsic Fourier features" [(https://doi.org/10.48550/arXiv.2504.16258)](
+https://doi.org/10.48550/arXiv.2504.16258) to analyze its results via Fourier series.  
 The code includes the following features (for more details see the publication):
 * exact computation and evaluation of the reweighted (exponentially tilted) dynamics of 1D random walks 
 * exact computation of the value function for the reweighted dynamics
@@ -25,17 +26,21 @@ pip install -r requirements.txt
 ## Usage
 
 In order to reproduce all results of this code including the plots used in the publication, run the script "main.py" 
-in the terminal or console:
+in the terminal or console,
 
 ```
 python3 main.py
 ```
 
-If you wish, you can change the configuration parameters for the features listed above in the configfile 
-"config_publication.json5" (for the meaning of the parameters see the comments therein).  
-In order to keep track of your changes, it might be advisable to copy "config_publication.json5", rename it, 
-change the parameters in the renamed configfile and change the keyword argument "param_file_name" in the 
-function call "main()" in main.py accordingly.
+which will run the code with the default configuration file "config_publication.json5".
+Alternatively you can run
+
+```
+python3 main.py --config_file_name <your_config_file_name>
+```
+
+where `<your_config_file_name>` is the name of the json5 configuration file you want to use 
+(for the meaning of the parameters within a configuration file see the comments in "config_publication.json5").
 
 When you run the script, the steps of the computations conducted and some details will be logged, by default in the file 
 "script.log".  
@@ -62,7 +67,7 @@ calls in "main.py".
 The other Python files provide the classes and functions used in "main.py" and are named according to their 
 respective functionality.
 
-**Feature planned for the future:** If you want to test yourself the implemented non-standard algorithms most important for this code, run the following
+**Testing:** If you want to test yourself the implemented non-standard algorithms most important for this code, run the following
 commands in the terminal or console:
 
 ```
@@ -70,11 +75,13 @@ pytest test_Fourier_series_analysis_and_fits.py
 ```
 
 ```
-pytest test_reweighted_dynamics.py
+pytest test_utilities.py
 ```
 
+The implementation of further tests is planned for the future, including:
+
 ```
-pytest test_utilities.py
+pytest test_reweighted_dynamics.py
 ```
 
 ```
@@ -92,7 +99,6 @@ pytest test_value_functions.py
 **Year**: 2024
 
 I want to thank Alissa Wilms and Clemens Wickboldt for stimulating discussions.
-**TODO:** Add Eduard Itrich here?
 
 ## License
 
