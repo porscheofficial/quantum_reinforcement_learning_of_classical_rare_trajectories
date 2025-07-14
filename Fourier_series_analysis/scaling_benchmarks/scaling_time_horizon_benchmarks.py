@@ -283,5 +283,10 @@ if __name__ == "__main__":
                      "--benchmark-json=data_parameterized_dynamics_fits_scaling_time_horizon.json"])
 
         df = benchmark_utils._load_results('data_parameterized_dynamics_fits_scaling_time_horizon.json')
+        config_benchmark = benchmark_utils._get_config_benchmark("config_parameterized_dynamics_fits_scaling_time_horizon.json5")
+        no_qubits = config_benchmark["no_qubits_list"][0]
+        no_layers = config_benchmark["no_layers_list"][0]
+        pqc_str = r"~\text{for " + f"{no_qubits} qubits, {no_layers} layers" + r"}$"
         benchmark_utils._plot_results(df, "plot_parameterized_dynamics_fits_scaling_time_horizon.pdf",
-                                      r"$\text{Scaling benchmark for computation of fits of parameterized dynamics}~P_\theta~\text{to}~P_W$")
+                                      r"$\text{Scaling benchmark for computation of fits of parameterized dynamics}~P_\theta~\text{to}~P_W"
+                                      + pqc_str)
