@@ -127,7 +127,7 @@ class ReweightedDynamics(ConsistentParametersClass):
         # compute gauge transform values
         for t in np.arange(T + 1)[::-1]:
             for x in np.arange(- t, t + 1, 2):
-                g_array[t, x + T] = calc_g_value(x, t)
+                g_array[t, x + T] = calc_g_value(x, t) if calc_g_value(x, t) > np.finfo(np.float64).tiny else np.finfo(np.float64).tiny
 
         return g_array
 
