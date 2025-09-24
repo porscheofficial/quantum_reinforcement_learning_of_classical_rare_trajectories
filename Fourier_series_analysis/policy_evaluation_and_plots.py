@@ -14,8 +14,6 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 
 import warnings
-from audioop import reverse
-
 import numpy as np
 import matplotlib as mpl
 import pandas as pd
