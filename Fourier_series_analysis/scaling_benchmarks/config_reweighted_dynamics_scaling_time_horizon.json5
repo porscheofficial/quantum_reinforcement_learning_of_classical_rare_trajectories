@@ -1,0 +1,22 @@
+{
+    // time steps of random walk
+    "T": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500],
+    // reward/return function parameter
+    "s": 1.0,
+    // required final position of rare trajectory
+    "x_T": 0,
+    // random walk prob. to move one step up
+    "prob_step_up": 0.5,
+    // list of #qubits in the parameterized quantum circuit (PQC)
+    "no_qubits_list": [1],
+    // list of #data-uploading layers in the PQC
+    "no_layers_list": [2],
+    // #sets of randomly chosen initial values for fitting parameters = #times policies/parameterized probs. are fitted to reweighted probs. P_W
+    "no_fits_first_T_value": 10,
+    // fitting parameters to be used (either 'Fourier_coefficients' or 'variational_angles' or 'random_Fourier_features')
+    "fitting_parameters": "Fourier_coefficients",
+    // maximal #optimization steps; if null, use default stopping criterion for optimization with scipy.optimize.minimize
+    "max_optimization_steps": null,
+    // type of cost function to use for fitting (either 'leastsq' or 'KL_divergence')
+    "cost_func_type": "leastsq",
+}

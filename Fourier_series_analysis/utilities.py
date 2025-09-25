@@ -11,13 +11,15 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
 """
-
-
+import glob
+import os
+import shutil
 import time
+import _pickle
 import json5
 import numpy as np
-import _pickle
 import sympy as sp
+from pathlib import Path
 from abc import ABC, abstractmethod
 from logging_config import get_logger
 
@@ -25,19 +27,74 @@ from logging_config import get_logger
 logger = get_logger("utilities.py")
 
 
-def import_params_from_json5(path: str) -> dict:
+def prepare_results_dir(config_file_name: str, dump_dict: dict = None) -> tuple[str, str]:
+    path_script = Path(__file__).resolve().parent  # get directory of current script
+    config_folder_name = Path(config_file_name).stem
+
+    path_computations = path_script / "results" / config_folder_name / "computations"
+    path_computations.mkdir(parents=True, exist_ok=True)
+
+    path_plots = path_script / "results" / config_folder_name / "plots"
+    path_plots.mkdir(parents=True, exist_ok=True)
+
+    path_config = path_script / "results" / config_folder_name
+
+    if dump_dict is not None:
+        with open(path_config / config_file_name, 'w') as f:
+            json5.dump(dump_dict, f, indent=4)
+
+    else:
+        shutil.copy(config_file_name, path_config)
+
+    return path_computations, path_plots
+
+
+def get_file_names_with_version(base_file_name: str, no_versions: int, directory: str, include_existing_versions=True,
+                                add_versions=False) -> tuple[list[str], int]:
     """
-    Import parameters from a JSON5 file and return them as a dictionary.
+    Generate file names with version numbers appended to the base file name.
 
     Parameters:
-        path: path to the JSON5 file
+        base_file_name: base file name without version number
+        no_versions: number of (further) versions to generate
+        directory: directory where the files are (to be) stored
+        include_existing_versions: if True, start with version 1,
+                                   otherwise with max_existing_version + 1
+        add_versions: if True or if no version exists, end with version max_existing_version + no_versions,
+                      otherwise with max_existing_version
 
     Returns:
-        params: dict with parameter names and values as dict key-value pairs
+        list of file names with version numbers, last version number used
     """
-    with open(path, 'r') as file:
-        params = json5.load(file)
-    return params
+
+    base_file_name = base_file_name.split(".")
+    assert len(base_file_name) == 2, "base_file_name must be a string of the form 'name.extension'"
+
+    pattern = f"{base_file_name[0]}_v*.{base_file_name[1]}"
+
+    # find all files in the directory that match the pattern
+    file_paths = glob.glob(os.path.join(directory, pattern))
+    file_names = [os.path.basename(path) for path in file_paths]
+
+    if len(file_names) > 0:
+        # extract version numbers from existing file names
+        existing_versions = [int(name.split("_v")[1].split(".")[0]) for name in file_names]
+        max_existing_version = max(existing_versions)
+    else:
+        max_existing_version = 0
+
+    if include_existing_versions:
+        start_version = 1
+    else:
+        start_version = max_existing_version + 1
+
+    if add_versions or max_existing_version == 0:
+        end_version = max_existing_version + no_versions
+    else:
+        end_version = max_existing_version
+
+    return [f"{base_file_name[0]}_v{version_no}.{base_file_name[1]}"
+            for version_no in range(start_version, end_version + 1)], end_version
 
 
 def convert_to_and_save_latex_string(sympy_expr: sp.Expr, file_name: str, comment: str) -> None:
@@ -373,3 +430,10 @@ class ProgressBar:
 
         # clear line
         print(f"\x1b[1K\r  {self.task_description} [{ProgressBar.format_delta_time(time.time() - self.start_time)}]")
+
+
+class InfoMessage(Warning):
+    """
+    Custom warning class for informational messages.
+    """
+    pass

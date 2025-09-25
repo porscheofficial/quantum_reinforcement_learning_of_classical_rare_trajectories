@@ -1,0 +1,12 @@
+.DS_Store
+*.npz
+*.pdf
+*.log
+*.json
+Fourier_series_analysis/results/
+Fourier_series_analysis/.venv
+venv
+.idea
+__pycache__
+packages.txt
+
