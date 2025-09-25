@@ -13,6 +13,12 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 """
 
 
+import sys
+from pathlib import Path
+
+main_directory = Path(__file__).resolve().parent.parent
+sys.path.append(str(main_directory))
+
 import pytest
 from utilities import einsum_subscripts
 

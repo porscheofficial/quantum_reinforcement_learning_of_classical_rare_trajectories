@@ -17,10 +17,9 @@ import os
 from multiprocessing import Pool
 import numpy as np
 import sympy as sp
-import matplotlib.pyplot as plt
 import dill
 import warnings
-from typing import Callable, List, Tuple
+from typing import Callable, Any
 from scipy.optimize import minimize
 from sympy.physics.quantum import TensorProduct
 
@@ -815,7 +814,7 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                  fitting_parameters: str, cost_func_type: str, no_trajectories_cost_func: int = None,
                  max_optimization_steps: int = None, T: int = None, s: float = None, x_T: float = None,
                  prob_step_up: float = None, optimal_average_return: float = None, optimized_params: np.ndarray = None,
-                 optimized_no_layers: int = None, compute_in_parallel=False):
+                 optimized_no_layers: int = None, compute_in_parallel=False, no_random_Fourier_features: int = None):
         """
         Fit parameterized dynamics to optimal dynamics.
 
@@ -842,6 +841,8 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                                              with optimized_no_layers-many data-uploading layers
             optimized_no_layers: see optimized_params_fourier_coeffs
             compute_in_parallel: if True, the fits are computed in parallel
+            no_random_Fourier_features: if not None, the number of random Fourier features to be used for
+                                        fitting_parameters == "random_Fourier_features"
 
         Returns:
             None
@@ -861,9 +862,15 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
         assert no_fits > 0, "no_fits > 0 required"
 
-        if not fitting_parameters in ["Fourier_coefficients", "variational_angles"]:
+        if not fitting_parameters in ["Fourier_coefficients", "variational_angles", "random_Fourier_features"]:
             raise NotImplementedError('Other options than fitting_parameters == "Fourier_coefficients" or '
-                                      '"variational_angles" have not been implemented yet.')
+                                      '"variational_angles" or "random_Fourier_features" have not been implemented yet.')
+
+        if fitting_parameters == "random_Fourier_features":
+            assert no_random_Fourier_features is not None, \
+                'if fitting_parameters == "random_Fourier_features", no_random_Fourier_features must be provided'
+            assert no_random_Fourier_features > 0, \
+                'no_random_Fourier_features > 0 required'
 
         if max_optimization_steps is not None:
             assert max_optimization_steps > 0, "max_optimization_steps > 0 required"
@@ -899,6 +906,10 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
         self.optimal_dynamics = optimal_dynamics
         self.fitting_parameters = fitting_parameters
+
+        if fitting_parameters == "random_Fourier_features":
+            self.no_random_Fourier_features = no_random_Fourier_features
+
         self.optimized_params = optimized_params
         self.optimized_no_layers = optimized_no_layers
 
@@ -947,9 +958,6 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
         ## fits in terms of Fourier coefficients (amplitudes and phases)
         elif fitting_parameters == "Fourier_coefficients":
-            no_pos_freqs = no_layers + 1
-            no_freqs = 2 * no_layers + 1
-
             if no_layers == 1:
                 if no_qubits == 1:
                     softmax_policy_1_qubit_1_layer_Fourier_coeffs = lambda coords_array, params_1_qubit_array: \
@@ -976,23 +984,55 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                                         no_amplitudes=1, no_phases=0)
 
             else:
+                no_pos_freqs = no_layers + 1
+                no_freqs = 2 * no_layers + 1
+
                 self.fitted_policies_array, self.optimized_params_min = \
                     self.fit_policy(self.softmax_policy_Fourier_coeffs,
                                     *constant_args, **constant_kwargs,
                                     no_amplitudes=no_pos_freqs * no_freqs, no_phases=no_pos_freqs * no_freqs)
 
 
-    @property
-    def all_init_params_dict(self):
-        if self.cost_func_type == "leastsq":
-            return {"no_qubits": self.no_qubits, "no_layers": self.no_layers, "no_fits": self.no_fits,
-                    "fitting_parameters": self.fitting_parameters, "cost_func_type": self.cost_func_type}
+        elif fitting_parameters == "random_Fourier_features":
+            if no_layers == 1:
+                raise NotImplementedError('The case fitting_parameters == "random_Fourier_features" and no_layers == 1'
+                                          'has not been implemented yet.')
 
-        elif self.cost_func_type == "trajectory_KL_divergence":
-            return {"no_qubits": self.no_qubits, "no_layers": self.no_layers, "no_fits": self.no_fits,
-                    "fitting_parameters": self.fitting_parameters, "cost_func_type": self.cost_func_type,
-                    "no_trajectories_cost_func": self.no_trajectories_cost_func, "T": self.T, "s": self.s,
-                    "x_T": self.x_T, "prob_step_up": self.prob_step_up}
+            self.indicator_nonzero_features = self.choose_random_Fourier_features(self.no_layers,
+                                                                             self.no_random_Fourier_features,
+                                                                             prob_dist="uniform")
+
+            no_pos_freqs = self.no_layers + 1
+            index_zero_freq_nx = no_pos_freqs - 1
+            c_00_is_nonzero = self.indicator_nonzero_features[0, index_zero_freq_nx]
+
+            softmax_policy_random_Fourier_features = lambda coords_array, params_array: \
+                self.softmax_policy_Fourier_coeffs(
+                    coords_array, self.calc_params_array_random_Fourier_features(no_layers, params_array,
+                                                                                 self.indicator_nonzero_features)
+                )
+
+            self.fitted_policies_array, self.optimized_params_min = \
+                self.fit_policy(softmax_policy_random_Fourier_features,
+                                *constant_args, **constant_kwargs,
+                                no_amplitudes=self.no_random_Fourier_features,
+                                no_phases=(self.no_random_Fourier_features - c_00_is_nonzero))
+
+
+    @property
+    def all_init_params_dict(self) -> dict[str, Any]:
+        common_params = {"no_qubits": self.no_qubits, "no_layers": self.no_layers, "no_fits": self.no_fits,
+                         "fitting_parameters": self.fitting_parameters, "cost_func_type": self.cost_func_type}
+        params = common_params
+
+        if self.fitting_parameters == "random_Fourier_features":
+            params = params | {"no_random_Fourier_features": self.no_random_Fourier_features}
+
+        if self.cost_func_type == "trajectory_KL_divergence":
+            params = params | {"no_trajectories_cost_func": self.no_trajectories_cost_func, "T": self.T, "s": self.s,
+                               "x_T": self.x_T, "prob_step_up": self.prob_step_up}
+
+        return params
 
 
     @staticmethod
@@ -1212,6 +1252,106 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
         params_array[:2] = params_n_qubits_array[:2]
         params_array[2:-1] = np.concatenate((a_array, phi_array))
         params_array[-1:] = params_n_qubits_array[-1:]
+
+        return params_array
+
+
+    @staticmethod
+    def choose_random_Fourier_features(no_layers: int, no_features: int, prob_dist="uniform") -> np.ndarray:
+        """
+        Choose random Fourier features for parameterized quantum circuit (PQC) with no_layers-many data-uploading
+        layers.
+
+        Parameters:
+            no_layers: #layers of PQC
+            no_features: #random Fourier features to be chosen
+            prob_dist: probability distribution for choosing random Fourier features
+
+        Returns:
+            indicator_nonzero_features: array of random Fourier features
+        """
+
+        # asserts
+        if prob_dist != "uniform":
+            raise NotImplementedError('The case prob_dist != "uniform" has not been implemented yet.')
+
+        no_pos_freqs = no_layers + 1
+        no_freqs = 2 * no_layers + 1
+
+        assert no_features <= no_pos_freqs * no_freqs - no_layers, \
+            "no_features <= no_pos_freqs * no_freqs - no_layers is required"
+
+        indicator_nonzero_features = np.zeros(no_pos_freqs * no_freqs, dtype=bool)
+
+        # choose nonzero random Fourier features
+        if prob_dist == "uniform":
+            rng = np.random.default_rng()
+            nonzero_features = rng.choice(np.arange(no_layers, no_pos_freqs * no_freqs),
+                                          size=no_features, replace=False, shuffle=False)
+
+            indicator_nonzero_features[nonzero_features] = 1
+            indicator_nonzero_features = indicator_nonzero_features.reshape(no_pos_freqs, no_freqs)
+            # note that indicator_nonzero_features[0, :no_layers] = 0 is chosen,
+            # because the corresponding Fourier coefficients are related by the symmetry relation
+            # c_{-n_x -n_t} = c_{n_x n_t}^* of the Fourier coefficients to another coefficient
+            # --> they are never needed as fitting parameter
+
+        return indicator_nonzero_features
+
+
+    @staticmethod
+    def calc_params_array_random_Fourier_features(no_layers: int, original_params_array: np.ndarray,
+                                                  indicator_nonzero_features: np.ndarray) -> np.ndarray:
+        """
+        Calculate elements of params_array (and assemble it) suitable for method softmax_policy_Fourier_coeffs
+        for random Fourier features for parameterized quantum circuit (PQC) with no_layers-many data-uploading
+        layers.
+
+        Parameters:
+            no_layers: #layers of PQC
+            original_params_array: array of independent parameters of PQC
+            indicator_nonzero_features: array indicating which Fourier features are nonzero
+
+        Returns:
+            params_array: array of variational parameters suitable for method softmax_policy_Fourier_coeffs
+        """
+
+        no_pos_freqs = no_layers + 1
+        no_freqs = 2 * no_layers + 1
+
+        no_nonzero_features = np.sum(indicator_nonzero_features)
+        index_zero_freq_nx = no_pos_freqs - 1
+        c_00_is_nonzero = indicator_nonzero_features[0, index_zero_freq_nx]
+
+        # asserts
+        assert np.shape(indicator_nonzero_features) == (no_pos_freqs, no_freqs), \
+            "np.shape(indicator_nonzero_features) == (no_pos_freqs, no_freqs) is required"
+        assert len(original_params_array) == 2 + 2 * no_nonzero_features - c_00_is_nonzero + 1, \
+            f"length {len(original_params_array)} of original_params_array not correct; it must contain " \
+            "2 input scaling parameters, no_nonzero_features amplitudes, (no_nonzero_features - c_00_is_nonzero) phases, " \
+            f"and 1 output scaling parameter, here in total: {2 + 2 * no_nonzero_features - c_00_is_nonzero + 1}"
+
+        # calculate elements of params_array suitable for method softmax_policy_Fourier_coeffs
+        a_array = np.zeros(no_pos_freqs * no_freqs)
+        phi_array = np.zeros(no_pos_freqs * no_freqs)
+
+        n = 0
+
+        for t in range(no_pos_freqs):
+            for x in range(no_freqs):
+                if indicator_nonzero_features[t, x]:
+                    a_array[t * no_freqs + x] = original_params_array[n + 2]
+
+                    if not (t == 0 and x == index_zero_freq_nx):
+                        phi_array[t * no_freqs + x] = original_params_array[n + 2 + no_nonzero_features - c_00_is_nonzero]
+
+                    n += 1
+
+        # construct params_array suitable for method softmax_policy_Fourier_coeffs
+        params_array = np.zeros(2 + len(a_array) + len(phi_array) + 1)
+        params_array[:2] = original_params_array[:2]
+        params_array[2:-1] = np.concatenate((a_array, phi_array))
+        params_array[-1:] = original_params_array[-1:]
 
         return params_array
 
