@@ -50,6 +50,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
     no_trajectories_policy_evaluation = config.no_trajectories_policy_evaluation
     policy_selection_criterion = config.policy_selection_criterion
     recompute_stored = config.recompute_stored
+    compute_value_function = config.compute_value_function
 
 
     logger.info(f"1. Prepare results directory (and its subdirectories) and loading parameters of computations from "
@@ -94,15 +95,16 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
 
 
     logger.info(f"4. Computation of value function for reweighted dynamics.")
-    value_function_reweighted_dynamics = \
-        load_or_compute_obj(ValueFunction,
-                            lambda: ValueFunction(reweighted_dynamics.reweighted_dynamics_P_W, T, s, x_T, prob_step_up),
-                            f"{path_computations}/value_function_reweighted_dynamics.npz", params,
-                            recompute=recompute_stored)
+    if compute_value_function:
+        value_function_reweighted_dynamics = \
+            load_or_compute_obj(ValueFunction,
+                                lambda: ValueFunction(reweighted_dynamics.reweighted_dynamics_P_W, T, s, x_T, prob_step_up),
+                                f"{path_computations}/value_function_reweighted_dynamics.npz", params,
+                                recompute=recompute_stored)
 
-    plot_as_heatmap(np.log10(-value_function_reweighted_dynamics.value_func_array[:-1]),
-                    # [:1] to discard value function values V(x, T) == 0 for plotting
-                    "log$_{10}(V_{P_W}(x, t))$", save_fig_as=f"{path_plots}/V_P_W.pdf")
+        plot_as_heatmap(np.log10(-value_function_reweighted_dynamics.value_func_array[:-1]),
+                        # [:1] to discard value function values V(x, T) == 0 for plotting
+                        "log$_{10}(V_{P_W}(x, t))$", save_fig_as=f"{path_plots}/V_P_W.pdf")
 
 
     logger.info(f"5. Symbolic calculation of Fourier coefficients for:")
@@ -358,7 +360,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
                          min_KL_1_qubit_list, min_KL_2_qubits_list, mean_KL_1_qubit_list, mean_KL_2_qubits_list,
                          std_KL_1_qubit_list, std_KL_2_qubits_list,
                          min_diff_prob_rare_trajectory_1_qubit_list, min_diff_prob_rare_trajectory_2_qubits_list,
-                         save_fig_as=file_name, quantities_x_and_y_in_one_plot=False)
+                         save_fig_as=file_name, two_plots=True)
     # TODO: remove 2-qubit and 15-data-uploading-layers data
 
 

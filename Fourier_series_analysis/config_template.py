@@ -55,6 +55,8 @@ class Config(BaseModel):
     policy_selection_criterion: Literal["max_prob_rare_trajectory", "max_avg_return", "min_KL_divergence", "min_MSE"]
     # if True, recompute previous stored results
     recompute_stored: bool = False
+    # if True, compute value function for reweighted dynamics
+    compute_value_function: bool = False
 
 
     @classmethod
@@ -121,6 +123,6 @@ class Config(BaseModel):
         """
         Load configuration from JSON5 file.
         """
-        with open(file_path, "r") as f:
+        with open(Path(__file__).parent / file_path, "r") as f:
             params = json5.load(f)
         return cls(**params)
