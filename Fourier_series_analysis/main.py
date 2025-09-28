@@ -134,6 +134,9 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
 
     for no_qubits in no_qubits_list:
         for no_layers in no_layers_list:
+            if no_samples_variational_params is None:
+                continue  # skip numerical computation of Fourier coefficients if no_samples_variational_params is not set
+
             if no_qubits == 2 and no_layers > 8:
                 continue
 

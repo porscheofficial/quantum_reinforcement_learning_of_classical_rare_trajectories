@@ -32,7 +32,7 @@ class Config(BaseModel):
     # list of #qubits in the parameterized quantum circuit (PQC)
     no_qubits_list: list[int]
     # #sets of randomly chosen variational angles = #times Fourier coefficients are computed
-    no_samples_variational_params: int
+    no_samples_variational_params: int | None = None
     # list of #data-uploading layers in the PQC
     no_layers_list: list[int]
     # #sets of randomly chosen initial values for fitting parameters = #times policies/parameterized probs. are fitted to reweighted probs. P_W
