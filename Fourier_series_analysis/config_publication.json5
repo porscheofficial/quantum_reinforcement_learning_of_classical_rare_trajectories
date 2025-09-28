@@ -31,5 +31,4 @@
     "policy_selection_criterion": "min_KL_divergence",
     // if True, recompute previous stored results
     "recompute_stored": false,
-
 }
