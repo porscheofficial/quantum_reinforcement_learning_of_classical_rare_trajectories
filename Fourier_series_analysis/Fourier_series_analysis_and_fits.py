@@ -813,7 +813,8 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
     def __init__(self, optimal_dynamics: np.ndarray, no_qubits: int, no_layers: int, no_fits: int,
                  fitting_parameters: str, cost_func_type: str, no_trajectories_cost_func: int = None,
                  max_optimization_steps: int = None, T: int = None, s: float = None, x_T: float = None,
-                 prob_step_up: float = None, optimal_average_return: float = None, optimized_params: np.ndarray = None,
+                 prob_step_up: float = None, optimal_average_return: float = None,
+                 ignore_P_W_beyond_x_plus_t_equal_to: int = None, optimized_params: np.ndarray = None,
                  optimized_no_layers: int = None, compute_in_parallel=False, no_random_Fourier_features: int = None):
         """
         Fit parameterized dynamics to optimal dynamics.
@@ -913,6 +914,8 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
         self.optimized_params = optimized_params
         self.optimized_no_layers = optimized_no_layers
 
+        self.ignore_P_W_beyond_x_plus_t_equal_to = ignore_P_W_beyond_x_plus_t_equal_to
+
 
         # initializations
         t_values = np.arange(T)
@@ -920,6 +923,10 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
 
         self.coords_array = np.array([[(t, x) for x in x_values]
                                       for t in t_values])
+
+        if self.ignore_P_W_beyond_x_plus_t_equal_to:
+            self.optimal_dynamic = self.mask_optimal_dynamics(self.optimal_dynamics,
+                                                              self.ignore_P_W_beyond_x_plus_t_equal_to)
 
 
         # fits in different cases (for):
@@ -1033,6 +1040,38 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
                                "x_T": self.x_T, "prob_step_up": self.prob_step_up}
 
         return params
+
+
+    def mask_optimal_dynamics(self, optimal_dynamics: np.ndarray, threshold: int) -> np.ndarray:
+        """
+        Mask optimal dynamics beyond a certain value of |x| + t with NaNs.
+
+        Parameters:
+            optimal_dynamics: optimal dynamics to be masked
+            threshold: threshold for |x| + t beyond which the optimal dynamics is masked
+
+        Returns:
+            masked optimal dynamics
+        """
+
+        # asserts
+        assert threshold > 0, "threshold > 0 required"
+        assert len(optimal_dynamics.shape) == 2, "optimal_dynamics must be a 2D-array"
+        assert 2 * optimal_dynamics.shape[0] - 1 == optimal_dynamics.shape[1], \
+            "optimal_dynamics must be of shape (T, 2 * T - 1) for some T > 0"
+
+        T = optimal_dynamics.shape[0]
+        x_values = np.arange(- T + 1, T)
+        t_values = np.arange(T)
+
+        coords_array = np.array([[(t, x) for x in x_values]
+                                  for t in t_values])
+
+        mask = np.array([[True if (t + abs(x)) > threshold else False
+                          for (t, x) in coords_row]
+                         for coords_row in coords_array])
+
+        return np.where(mask, np.nan, optimal_dynamics)
 
 
     @staticmethod

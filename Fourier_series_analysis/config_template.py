@@ -57,6 +57,8 @@ class Config(BaseModel):
     recompute_stored: bool = False
     # if True, compute value function for reweighted dynamics
     compute_value_function: bool = False
+    # if not None, for the fits set all entries of reweighted dynamics P_W to NaN for which |x| + t > ignore_P_W_beyond_x_plus_t_equal_to
+    ignore_P_W_beyond_x_plus_t_equal_to: int | None = None
 
 
     @classmethod

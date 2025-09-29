@@ -51,6 +51,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
     policy_selection_criterion = config.policy_selection_criterion
     recompute_stored = config.recompute_stored
     compute_value_function = config.compute_value_function
+    ignore_P_W_beyond_x_plus_t_equal_to = config.ignore_P_W_beyond_x_plus_t_equal_to
 
 
     logger.info(f"1. Prepare results directory (and its subdirectories) and loading parameters of computations from "
@@ -207,6 +208,7 @@ def main(config_file_name: str = "config_publication.json5", create_plots=True) 
                                                                           no_random_Fourier_features=no_random_Fourier_features,
                                                                           T=T, s=s, x_T=x_T, prob_step_up=prob_step_up,
                                                                           optimal_average_return=np.log(reweighted_dynamics.partition_function_Z),
+                                                                          ignore_P_W_beyond_x_plus_t_equal_to=ignore_P_W_beyond_x_plus_t_equal_to,
                                                                           compute_in_parallel=True),
                                         file_name, params, recompute=recompute_stored)
 
