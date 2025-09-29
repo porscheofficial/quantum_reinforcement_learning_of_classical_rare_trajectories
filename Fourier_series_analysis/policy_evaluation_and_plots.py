@@ -260,32 +260,14 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
                          opt_y_1_qubit_list: list, opt_y_2_qubits_list: list,
                          opt_x="min", opt_y="max",
                          save_fig_as="plot_table_results_Fourier_series_fits.pdf", show_plot=False,
-                         quantities_x_and_y_in_one_plot=True) -> None:
+                         two_plots=False) -> None:
     """
     Create plot of quantities x and y for fitted parameterized dynamics of parameterized quantum circuits (PQCs)
     with 1 and 2 qubits vs. #data-uploading layers of PQCs.
     Plot includes optimal and mean values with standard deviations shown as error bars.
 
-    Parameters:
-        no_layers_list: list of #layers of PQCs
-        quantity_x_label: label of quantity x
-        quantity_y_label: label of quantity y
-        opt_x_1_qubit_list: list of optimal values of x for 1-qubit PQCs
-        opt_x_2_qubits_list: list of optimal values of x for 2-qubit PQCs with 1 layer
-        mean_x_1_qubit_list: list of mean values of x for 1-qubit PQCs
-        mean_x_2_qubits_list: list of mean values of x for 2-qubit PQCs with 1 layer
-        std_x_1_qubit_list: list of standard deviations of x for 1-qubit PQCs
-        std_x_2_qubits_list: list of standard deviations of x for 2-qubit PQCs with 1 layer
-        opt_y_1_qubit_list: list of optimal values of y for 1-qubit PQCs
-        opt_y_2_qubits_list: list of optimal values of y for 2-qubit PQCs with 1 layer
-        opt_x: whether to plot optimal values of x given by "max" or "min"
-        save_fig_as: name of PDF file to save plot
-        show_plot: whether to show plot or not
-        quantities_x_and_y_in_one_plot: if True, plot quantities x and y in one plot with two vertical axes,
-                                        if False, plot them in two separate plots side by side
-
-    Returns:
-        None
+    If two_plots is True, create two side-by-side plots: one for x, one for y.
+    If False, create a single plot with both quantities overlaid (as before).
     """
 
     assert len(opt_x_1_qubit_list) == len(mean_x_1_qubit_list) == len(std_x_1_qubit_list) == len(opt_y_1_qubit_list), \
@@ -301,36 +283,22 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     assert opt_x == "min" or opt_x == "max", f"Invalid opt_x {opt_x}, must be 'min' or 'max'."
     assert opt_y == "min" or opt_y == "max", f"Invalid opt_y {opt_y}, must be 'min' or 'max'."
 
-
-    # preprocess data for plotting
-    opt_x_1_qubit = np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0)
-    mean_x_1_qubit = np.mean(mean_x_1_qubit_list, axis=0)
-    std_x_1_qubit = np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) +
-                            np.power(np.std(mean_x_1_qubit_list, axis=0), 2))
-    opt_y_1_qubit = np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0)
-
-    opt_x_2_qubits = np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0)
-    mean_x_2_qubits = np.mean(mean_x_2_qubits_list, axis=0)
-    std_x_2_qubits = np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0) +
-                             np.power(np.std(std_x_2_qubits_list, axis=0), 2))
-    opt_y_2_qubits = np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0)
-
-    all_opt_x_values = np.concatenate((opt_x_1_qubit, [opt_x_2_qubits]))
-    all_mean_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
-    all_std_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
-
-    all_x_values = np.concatenate((all_opt_x_values, all_mean_x_values + all_std_x_values))
-
-    if opt_x == "max":
-        ylim_x = 1.1 * np.nanmin(all_x_values)
-
-    else:
-        ylim_x = 1.1 * np.nanmax(all_x_values)
-
-
-    if quantities_x_and_y_in_one_plot:
+    if not two_plots:
         fig, axes_1 = plt.subplots(1, 3, width_ratios=[3, 1, 1])
         plt.subplots_adjust(wspace=0.15)  # adjusts width between subplots
+
+        # preprocess data for plotting
+        opt_x_1_qubit = np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0)
+        mean_x_1_qubit = np.mean(mean_x_1_qubit_list, axis=0)
+        std_x_1_qubit = np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) +
+                                np.power(np.std(mean_x_1_qubit_list, axis=0), 2))
+        opt_y_1_qubit = np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0)
+
+        opt_x_2_qubits = np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0)
+        mean_x_2_qubits = np.mean(mean_x_2_qubits_list, axis=0)
+        std_x_2_qubits = np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0) +
+                                 np.power(np.std(std_x_2_qubits_list, axis=0), 2))
+        opt_y_2_qubits = np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0)
 
         # plot quantity x with error bars
         color = colors[0]
@@ -358,6 +326,18 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
             axes[1].spines['left'].set_visible(False)
             axes[1].spines['right'].set_visible(False)
             axes[2].spines['left'].set_visible(False)
+
+        all_opt_x_values = np.concatenate((opt_x_1_qubit, [opt_x_2_qubits]))
+        all_mean_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
+        all_std_x_values = np.concatenate((mean_x_1_qubit, [mean_x_2_qubits]))
+
+        all_x_values = np.concatenate((all_opt_x_values, all_mean_x_values + all_std_x_values))
+
+        if opt_x == "max":
+            ylim_x = 1.1 * np.nanmin(all_x_values)
+
+        else:
+            ylim_x = 1.1 * np.nanmax(all_x_values)
 
         for ax in axes_1:
             ax.set_ylim(0.0, ylim_x)
@@ -422,41 +402,26 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
 
         plt.close()
     else:
-        # two separate plots side by side: left for x, right for y
+        # Two separate plots side by side: left for x, right for y
         fig, (ax_x, ax_y) = plt.subplots(1, 2, figsize=(12, 5))
-
-        # plot x
+        # Plot x
         color_x = colors[0]
-        ax_x.errorbar(no_layers_list,
-                      np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0),
-                      fmt='D', color=color_x)
-        ax_x.errorbar(no_layers_list, np.mean(mean_x_1_qubit_list, axis=0),
-                      yerr=np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0)
-                                   + np.power(np.std(mean_x_1_qubit_list, axis=0), 2)),
-                      fmt='o', color=color_x)
-        ax_x.errorbar(1, np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0),
-                      fmt='D', mec=color_x, mfc='none')
-        ax_x.errorbar(1, np.mean(mean_x_2_qubits_list, axis=0),
-                      yerr=np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0)
-                                   + np.power(np.std(std_x_2_qubits_list, axis=0), 2)),
-                      fmt='o', mec=color_x, mfc='none')
+        ax_x.errorbar(no_layers_list, np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0), fmt='D', color=color_x, label='opt 1q')
+        ax_x.errorbar(no_layers_list, np.mean(mean_x_1_qubit_list, axis=0), yerr=np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) + np.power(np.std(mean_x_1_qubit_list, axis=0), 2)), fmt='o', color=color_x, label='mean 1q')
+        ax_x.errorbar(1, np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0), fmt='D', mec=color_x, mfc='none', label='opt 2q')
+        ax_x.errorbar(1, np.mean(mean_x_2_qubits_list, axis=0), yerr=np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0) + np.power(np.std(std_x_2_qubits_list, axis=0), 2)), fmt='o', mec=color_x, mfc='none', label='mean 2q')
         ax_x.set_ylabel(quantity_x_label, color=color_x)
-        ax_x.set_ylim(0.0, ylim_x)
         ax_x.set_xlabel('# data-uploading layers')
         ax_x.tick_params(axis='y', labelcolor=color_x)
-
-        # plot y
+        ax_x.legend()
+        # Plot y
         color_y = colors[1]
-        ax_y.errorbar(no_layers_list,
-                      np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0),
-                      fmt='s', color=color_y)
-        ax_y.errorbar(1, np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0),
-                      fmt='s', mec=color_y, mfc='none')
+        ax_y.errorbar(no_layers_list, np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0), fmt='s', color=color_y, label='opt 1q')
+        ax_y.errorbar(1, np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0), fmt='s', mec=color_y, mfc='none', label='opt 2q')
         ax_y.set_ylabel(quantity_y_label, color=color_y)
-        ax_y.set_ylim(0.0, 1.0)
         ax_y.set_xlabel('# data-uploading layers')
         ax_y.tick_params(axis='y', labelcolor=color_y)
-
+        ax_y.legend()
         fig.tight_layout()
         fig.savefig(save_fig_as, bbox_inches="tight")
         if show_plot:

@@ -44,7 +44,7 @@ def prepare_results_dir(config_file_name: str, dump_dict: dict = None) -> tuple[
             json5.dump(dump_dict, f, indent=4)
 
     else:
-        shutil.copy(config_file_name, path_config)
+        shutil.copy(Path(__file__).parent / config_file_name, path_config)
 
     return path_computations, path_plots
 

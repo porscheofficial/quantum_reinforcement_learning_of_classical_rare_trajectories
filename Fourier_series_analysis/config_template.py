@@ -32,7 +32,7 @@ class Config(BaseModel):
     # list of #qubits in the parameterized quantum circuit (PQC)
     no_qubits_list: list[int]
     # #sets of randomly chosen variational angles = #times Fourier coefficients are computed
-    no_samples_variational_params: int
+    no_samples_variational_params: int | None = None
     # list of #data-uploading layers in the PQC
     no_layers_list: list[int]
     # #sets of randomly chosen initial values for fitting parameters = #times policies/parameterized probs. are fitted to reweighted probs. P_W
@@ -55,6 +55,10 @@ class Config(BaseModel):
     policy_selection_criterion: Literal["max_prob_rare_trajectory", "max_avg_return", "min_KL_divergence", "min_MSE"]
     # if True, recompute previous stored results
     recompute_stored: bool = False
+    # if True, compute value function for reweighted dynamics
+    compute_value_function: bool = False
+    # if not None, for the fits set all entries of reweighted dynamics P_W to NaN for which |x| + t > ignore_P_W_beyond_x_plus_t_equal_to
+    ignore_P_W_beyond_x_plus_t_equal_to: int | None = None
 
 
     @classmethod
@@ -121,6 +125,6 @@ class Config(BaseModel):
         """
         Load configuration from JSON5 file.
         """
-        with open(file_path, "r") as f:
+        with open(Path(__file__).parent / file_path, "r") as f:
             params = json5.load(f)
         return cls(**params)
