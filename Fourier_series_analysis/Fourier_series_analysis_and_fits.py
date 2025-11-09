@@ -14,11 +14,12 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 
 
 import os
-from multiprocessing import Pool
 import numpy as np
 import sympy as sp
 import dill
 import warnings
+
+from multiprocessing import Pool
 from typing import Callable, Any
 from scipy.optimize import minimize
 from sympy.physics.quantum import TensorProduct
@@ -967,26 +968,26 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
         elif fitting_parameters == "Fourier_coefficients":
             if no_layers == 1:
                 if no_qubits == 1:
-                    softmax_policy_1_qubit_1_layer_Fourier_coeffs = lambda coords_array, params_1_qubit_array: \
+                    self.softmax_policy_1_qubit_1_layer_Fourier_coeffs = lambda coords_array, params_1_qubit_array: \
                         self.softmax_policy_Fourier_coeffs(
                             coords_array, self.calc_params_array_n_qubits_1_layer(1, params_1_qubit_array,
                                                                                   in_terms_of_thetas=False)
                         )
 
                     self.fitted_policies_array, self.optimized_params_min = \
-                        self.fit_policy(softmax_policy_1_qubit_1_layer_Fourier_coeffs,
+                        self.fit_policy(self.softmax_policy_1_qubit_1_layer_Fourier_coeffs,
                                         *constant_args, **constant_kwargs,
                                         no_amplitudes=3, no_phases=3)
 
                 elif no_qubits == 2:
-                    softmax_policy_2_qubits_1_layer_Fourier_coeffs = lambda coords_array, params_2_qubits_array: \
+                    self.softmax_policy_2_qubits_1_layer_Fourier_coeffs = lambda coords_array, params_2_qubits_array: \
                         self.softmax_policy_Fourier_coeffs(
                             coords_array, self.calc_params_array_n_qubits_1_layer(2, params_2_qubits_array,
                                                                                   in_terms_of_thetas=False)
                         )
 
                     self.fitted_policies_array, self.optimized_params_min = \
-                        self.fit_policy(softmax_policy_2_qubits_1_layer_Fourier_coeffs,
+                        self.fit_policy(self.softmax_policy_2_qubits_1_layer_Fourier_coeffs,
                                         *constant_args, **constant_kwargs,
                                         no_amplitudes=1, no_phases=0)
 
@@ -1013,14 +1014,14 @@ class ParameterizedDynamicsFits(ConsistentParametersClass):
             index_zero_freq_nx = no_pos_freqs - 1
             c_00_is_nonzero = self.indicator_nonzero_features[0, index_zero_freq_nx]
 
-            softmax_policy_random_Fourier_features = lambda coords_array, params_array: \
+            self.softmax_policy_random_Fourier_features = lambda coords_array, params_array: \
                 self.softmax_policy_Fourier_coeffs(
                     coords_array, self.calc_params_array_random_Fourier_features(no_layers, params_array,
                                                                                  self.indicator_nonzero_features)
                 )
 
             self.fitted_policies_array, self.optimized_params_min = \
-                self.fit_policy(softmax_policy_random_Fourier_features,
+                self.fit_policy(self.softmax_policy_random_Fourier_features,
                                 *constant_args, **constant_kwargs,
                                 no_amplitudes=self.no_random_Fourier_features,
                                 no_phases=(self.no_random_Fourier_features - c_00_is_nonzero))
