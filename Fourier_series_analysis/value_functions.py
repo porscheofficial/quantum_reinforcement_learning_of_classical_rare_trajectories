@@ -100,9 +100,9 @@ class ValueFunction(ConsistentParametersClass):
 
         # calculate weight 
         if time_t == T:
-            weight = ReweightedDynamics.calc_weight_function(position_x + action_a, s, x_T)
+            log_weight = - s * (position_x - x_T) ** 2
         else:
-            weight = 1
+            log_weight = 0
 
         # probabilities for up/right step
         p_theta = p_theta_distribution[time_t - 1, position_x + T - 1]
@@ -111,9 +111,13 @@ class ValueFunction(ConsistentParametersClass):
 
         # calculate reward
         if action_a == 1:
-            return np.log(weight) - np.log(p_theta) + np.log(prob_step_up)
+            reward = log_weight - np.log(p_theta) + np.log(prob_step_up)
         else:
-            return np.log(weight) - np.log(1 - p_theta) + np.log(1 - prob_step_up)
+            reward = log_weight - np.log(1 - p_theta) + np.log(1 - prob_step_up)
+
+        if np.isinf(reward):
+            raise Exception(f"Calculated {reward=}!")
+        return reward
         
 
     def calc_value_function(self, x: int, t: int, p_theta_distribution: np.ndarray, T: int, s: float, x_T: int,

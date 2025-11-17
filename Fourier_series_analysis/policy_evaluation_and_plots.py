@@ -17,9 +17,12 @@ import warnings
 import numpy as np
 import matplotlib as mpl
 import pandas as pd
+
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_pdf import PdfPages
+from numba import njit
+
 from logging_config import get_logger
 from reweighted_dynamics import ReweightedDynamics
 from utilities import ConsistentParametersClass
@@ -253,7 +256,7 @@ def plot_Fourier_coeffs(no_layers: int, coeffs_samples: np.ndarray, save_fig_as:
     plt.close()
 
 
-def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y_label: str,
+def plot_xy_vs_no_layers(x_list: list, quantity_x_label: str, quantity_y_label: str,
                          opt_x_1_qubit_list: list, opt_x_2_qubits_list: list,
                          mean_x_1_qubit_list: list, mean_x_2_qubits_list: list,
                          std_x_1_qubit_list: list, std_x_2_qubits_list: list,
@@ -273,8 +276,8 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
     assert len(opt_x_1_qubit_list) == len(mean_x_1_qubit_list) == len(std_x_1_qubit_list) == len(opt_y_1_qubit_list), \
         ("Lengths of lists opt_x_1_qubit_list, mean_x_1_qubit_list, std_x_1_qubit_list, and opt_y_1_qubit_list "
          "must be equal.")
-    assert len(no_layers_list) == len(opt_x_1_qubit_list[0]) == len(mean_x_1_qubit_list[0]) == len(std_x_1_qubit_list[0]), \
-        ("Lengths of lists no_layers_list, opt_x_1_qubit_list[0], mean_x_1_qubit_list[0], and std_x_1_qubit_list[0] "
+    assert len(x_list) == len(opt_x_1_qubit_list[0]) == len(mean_x_1_qubit_list[0]) == len(std_x_1_qubit_list[0]), \
+        ("Lengths of lists x_list, opt_x_1_qubit_list[0], mean_x_1_qubit_list[0], and std_x_1_qubit_list[0] "
          "must be equal.")
     assert len(opt_x_2_qubits_list) == len(mean_x_2_qubits_list) == len(std_x_2_qubits_list) == len(opt_y_2_qubits_list), \
         ("Lengths of lists opt_x_2_qubits_list, mean_x_2_qubits_list, std_x_2_qubits_list, and opt_y_2_qubits_list "
@@ -304,8 +307,8 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         color = colors[0]
 
         for ax in axes_1:
-            ax.errorbar(no_layers_list, opt_x_1_qubit, fmt='D', color=color)
-            ax.errorbar(no_layers_list, mean_x_1_qubit, yerr=std_x_1_qubit, fmt='o', color=color)
+            ax.errorbar(x_list, opt_x_1_qubit, fmt='D', color=color)
+            ax.errorbar(x_list, mean_x_1_qubit, yerr=std_x_1_qubit, fmt='o', color=color)
 
             ax.errorbar(1, opt_x_2_qubits, fmt='D', mec=color, mfc='none')
             ax.errorbar(1, mean_x_2_qubits, yerr=std_x_2_qubits, fmt='o', mec=color, mfc='none')
@@ -317,7 +320,7 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         color = colors[1]
 
         for ax in axes_2:
-            ax.errorbar(no_layers_list, opt_y_1_qubit, fmt='s', color=color)
+            ax.errorbar(x_list, opt_y_1_qubit, fmt='s', color=color)
             ax.errorbar(1, opt_y_2_qubits, fmt='s', mec=color, mfc='none')
 
         # adjust plots
@@ -345,7 +348,7 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         for ax in axes_2:
             ax.set_ylim(0.0, 1.0)
 
-        if no_layers_list ==[1, 2, 3, 4, 5, 10, 15]:
+        if x_list ==[1, 2, 3, 4, 5, 10, 15]:
             axes_1[0].set_xlim(0., 6.)
             axes_1[1].set_xlim(9., 11.)
             axes_1[2].set_xlim(14., 16.)
@@ -357,7 +360,7 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
             axes_1[2].set_xticks([15])
             axes_1[2].set_xticklabels([15])
 
-        elif no_layers_list == [4, 5, 6, 7, 8, 9, 10, 15]:
+        elif x_list == [4, 5, 6, 7, 8, 9, 10, 15]:
             axes_1[0].set_xlim(0., 9.5)
             axes_1[1].set_xlim(9.5, 10.5)
             axes_1[2].set_xlim(14.5, 15.5)
@@ -406,8 +409,8 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         fig, (ax_x, ax_y) = plt.subplots(1, 2, figsize=(12, 5))
         # Plot x
         color_x = colors[0]
-        ax_x.errorbar(no_layers_list, np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0), fmt='D', color=color_x, label='opt 1q')
-        ax_x.errorbar(no_layers_list, np.mean(mean_x_1_qubit_list, axis=0), yerr=np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) + np.power(np.std(mean_x_1_qubit_list, axis=0), 2)), fmt='o', color=color_x, label='mean 1q')
+        ax_x.errorbar(x_list, np.min(opt_x_1_qubit_list, axis=0) if opt_x == "min" else np.max(opt_x_1_qubit_list, axis=0), fmt='D', color=color_x, label='opt 1q')
+        ax_x.errorbar(x_list, np.mean(mean_x_1_qubit_list, axis=0), yerr=np.sqrt(np.mean(np.power(std_x_1_qubit_list, 2), axis=0) + np.power(np.std(mean_x_1_qubit_list, axis=0), 2)), fmt='o', color=color_x, label='mean 1q')
         ax_x.errorbar(1, np.min(opt_x_2_qubits_list, axis=0) if opt_x == "min" else np.max(opt_x_2_qubits_list, axis=0), fmt='D', mec=color_x, mfc='none', label='opt 2q')
         ax_x.errorbar(1, np.mean(mean_x_2_qubits_list, axis=0), yerr=np.sqrt(np.mean(np.power(std_x_2_qubits_list, 2), axis=0) + np.power(np.std(std_x_2_qubits_list, axis=0), 2)), fmt='o', mec=color_x, mfc='none', label='mean 2q')
         ax_x.set_ylabel(quantity_x_label, color=color_x)
@@ -416,7 +419,7 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         ax_x.legend()
         # Plot y
         color_y = colors[1]
-        ax_y.errorbar(no_layers_list, np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0), fmt='s', color=color_y, label='opt 1q')
+        ax_y.errorbar(x_list, np.min(opt_y_1_qubit_list, axis=0) if opt_y == "min" else np.max(opt_y_1_qubit_list, axis=0), fmt='s', color=color_y, label='opt 1q')
         ax_y.errorbar(1, np.min(opt_y_2_qubits_list, axis=0) if opt_y == "min" else np.max(opt_y_2_qubits_list, axis=0), fmt='s', mec=color_y, mfc='none', label='opt 2q')
         ax_y.set_ylabel(quantity_y_label, color=color_y)
         ax_y.set_xlabel('# data-uploading layers')
@@ -427,6 +430,48 @@ def plot_xy_vs_no_layers(no_layers_list: list, quantity_x_label: str, quantity_y
         if show_plot:
             plt.show()
         plt.close()
+
+
+def plot_xy_vs_T(x_list: list, quantity_x_label: str, quantity_y_label: str,
+                 opt_x_list: list, mean_x_list: list, std_x_list: list, opt_y_list: list,
+                 save_fig_as="plot_table_results_Fourier_series_fits.pdf", show_plot=False
+                 ) -> None:
+    """
+    Plot two quantities (x and y) versus time horizon T as two side-by-side subplots.
+
+    Parameters:
+        x_list (list): Values for the time horizon T (horizontal axis).
+        quantity_x_label (str): Label for the vertical axis of the x quantity plot.
+        quantity_y_label (str): Label for the vertical of the y quantity plot.
+        opt_x_list (list): Optimal values for quantity x.
+        mean_x_list (list): Mean values for quantity x.
+        std_x_list (list): Standard deviations for quantity x.
+        opt_y_list (list): Optimal values for quantity y.
+        save_fig_as (str, optional): Filename to save the plot. 
+        show_plot (bool, optional): If True, display the plot interactively.
+
+    Returns:
+        None
+    """
+    fig, (ax_x, ax_y) = plt.subplots(1, 2, figsize=(15, 5))
+    # Plot x
+    color_x = colors[0]
+    ax_x.errorbar(x_list, opt_x_list, fmt='D', color=color_x, label="")
+    ax_x.errorbar(x_list, mean_x_list, yerr=std_x_list, fmt='o', color=color_x)
+    ax_x.set_ylabel(quantity_x_label, color=color_x)
+    ax_x.set_xlabel('time horizon T')
+    ax_x.legend()
+    # Plot y
+    color_y = colors[1]
+    ax_y.errorbar(x_list, opt_y_list, fmt='s', color=color_y, label="")
+    ax_y.set_ylabel(quantity_y_label, color=color_y)
+    ax_y.set_xlabel('time horizon T')
+    ax_y.legend()
+    fig.tight_layout()
+    fig.savefig(save_fig_as, bbox_inches="tight")
+    if show_plot:
+        plt.show()
+    plt.close()
 
 
 class PolicyEvaluation(ConsistentParametersClass):
@@ -578,7 +623,8 @@ class PolicyEvaluation(ConsistentParametersClass):
 
 
     @staticmethod
-    def calc_trajectories_x_array(policies_array: np.ndarray, T: int, no_trajectories: int) -> np.ndarray:
+    def calc_trajectories_x_array(policies_array: np.ndarray, T: int, no_trajectories: int,
+                                  use_compiled_func: bool = True) -> np.ndarray:
         """
         Compute array of trajectories (x_0, x_1, ..., x_T) of length T + 1 with x_0 = 0 according to policies.
 
@@ -587,6 +633,7 @@ class PolicyEvaluation(ConsistentParametersClass):
                             according to the m-th policy
             T: length of trajectories
             no_trajectories: number of trajectories
+            use_compiled_func: whether to use jit-compiled function to compute trajectories
 
         Returns:
             trajectories_x_array: trajectories_x_array[m, n, :] contains the n-th trajectory generated by the
@@ -599,10 +646,21 @@ class PolicyEvaluation(ConsistentParametersClass):
 
         # initialization
         no_policies = len(policies_array)
+
+        # compute array of trajectory positions
+        if use_compiled_func:
+            return PolicyEvaluation._use_calc_trajectories_x_array_jit(policies_array, T, no_trajectories, no_policies)
+        else:
+            return PolicyEvaluation._calc_trajectories_x_array(policies_array, T, no_trajectories, no_policies)
+
+
+    @staticmethod
+    def _calc_trajectories_x_array(policies_array: np.ndarray, T: int, no_trajectories: int, no_policies: int) \
+            -> np.ndarray:
+        """Method to be used within calc_trajectories_x_array (for more information see its docstring)."""
         trajectories_x_array = np.zeros((no_policies, no_trajectories, T + 1), dtype=int)
         rng = np.random.default_rng()  # random number generator
 
-        # compute array of trajectory positions
         for t in range(1, T + 1):
             delta_x = np.array([[rng.choice([+1, -1],
                                             p=[policies_array[m, t - 1, trajectories_x_array[m, n, t - 1] + T - 1],
@@ -610,6 +668,35 @@ class PolicyEvaluation(ConsistentParametersClass):
                                  # + T - 1 due to the way in which policies_array is defined
                                  for n in range(no_trajectories)]
                                 for m in range(no_policies)])
+            trajectories_x_array[:, :, t] = trajectories_x_array[:, :, t - 1] + delta_x
+
+        return trajectories_x_array
+
+
+    @staticmethod
+    def _use_calc_trajectories_x_array_jit(policies_array: np.ndarray, T: int, no_trajectories: int, no_policies: int) \
+            -> np.ndarray:
+        """Method to be used within calc_trajectories_x_array (for more information see its docstring)."""
+        trajectories_x_array = np.zeros((no_policies, no_trajectories, T + 1), dtype=int)
+        rng = np.random.default_rng()  # random number generator
+        random_numbers = rng.random(trajectories_x_array.shape)
+
+        return PolicyEvaluation._calc_trajectories_x_array_jit(trajectories_x_array, random_numbers, policies_array,
+                                                               T, no_trajectories, no_policies)
+
+
+    @staticmethod
+    @njit('int64[:, :, :](int64[:, :, :], float64[:, :, :], float64[:, :, :], int64, int64, int64)')
+    def _calc_trajectories_x_array_jit(trajectories_x_array: np.ndarray, random_numbers: np.ndarray,
+                                       policies_array: np.ndarray, T: int, no_trajectories: int, no_policies: int) \
+            -> np.ndarray:
+        """Method to be used within calc_trajectories_x_array (for more information see its docstring)."""
+        for t in range(1, T + 1):
+            probabilities_array =  np.array([[policies_array[m, t - 1, trajectories_x_array[m, n, t - 1] + T - 1]
+                                              # + T - 1 due to the way in which policies_array is defined
+                                              for n in range(no_trajectories)]
+                                             for m in range(no_policies)])
+            delta_x = np.where(probabilities_array > random_numbers[:, :, t - 1], 1, -1)
             trajectories_x_array[:, :, t] = trajectories_x_array[:, :, t - 1] + delta_x
 
         return trajectories_x_array
@@ -639,7 +726,7 @@ class PolicyEvaluation(ConsistentParametersClass):
 
     @staticmethod
     def calc_return_values(trajectories_x_array: np.ndarray, policies_array: np.ndarray, s: float, x_T: int,
-                           prob_step_up: float) -> np.ndarray:
+                           prob_step_up: float, use_vectorized_func: bool = True) -> np.ndarray:
         """
         Compute array of return values for trajectories.
 
@@ -651,6 +738,7 @@ class PolicyEvaluation(ConsistentParametersClass):
             s: factor contained in the reward function
                 (determining the importance of generating rare trajectories vs. staying close to the original dynamics
                 of the random walk)
+            use_vectorized_func: whether to use vectorized function to compute rewards
 
         Returns:
             return_values_array: return_values_list[m, n] contains the return value of the n-th trajectory generated by
@@ -665,16 +753,52 @@ class PolicyEvaluation(ConsistentParametersClass):
         no_policies, no_trajectories, length = np.shape(trajectories_x_array)
         T = length - 1
 
-        return_values_array = np.zeros((no_policies, no_trajectories))
-
         # compute return values for trajectories
-        for t in range(1, T + 1):
-            return_values_array += \
-                np.array([[ValueFunction.calc_reward(trajectories_x_array[m, n, t] - trajectories_x_array[m, n, t - 1],
-                                                     trajectories_x_array[m, n, t - 1], t, policies_array[m],
-                                                     T, s, x_T, prob_step_up)
+        if use_vectorized_func:
+            reward_values_array = \
+                PolicyEvaluation._calc_reward_vectorized(trajectories_x_array[:, :, 1:] - trajectories_x_array[:, :, :-1],
+                                                         trajectories_x_array[:, :, :-1], np.arange(1, T + 1),
+                                                         policies_array, T, s, x_T, prob_step_up)
+        else:
+            reward_values_array = \
+                np.array([[[ValueFunction.calc_reward(trajectories_x_array[m, n, t] - trajectories_x_array[m, n, t - 1],
+                                                      trajectories_x_array[m, n, t - 1], t, policies_array[m],
+                                                      T, s, x_T, prob_step_up)
+                            for t in range(1, T + 1)]
                            for n in range(no_trajectories)]
                           for m in range(no_policies)])
 
-        return return_values_array
+        if np.any(np.isinf(reward_values_array)):
+            raise Exception(f"Calculated return_values_array contains infinities at indices "
+                            f"{np.argwhere(np.isinf(reward_values_array))}!")
+
+        return np.sum(reward_values_array, axis=-1)
+
+
+    @staticmethod
+    def _calc_reward_vectorized(actions_a: np.ndarray, positions_x: np.ndarray, times_t: np.ndarray,
+                                p_theta_distribution: np.ndarray, T: int, s: float, x_T: int, prob_step_up: float) \
+            -> np.ndarray:
+        """
+        Vectorized, performance-optimized version (without asserts) of ValueFunction.calc_reward
+        (for more information see its docstring) to be used in calc_return_values.
+        """
+        # calculate weight
+        log_weight = np.where(times_t == T, - s * (positions_x - x_T) ** 2, 0.)
+        # times_t is broadcasted by np.where to shape of positions_x
+
+        # probabilities for up/right step
+        no_policies, no_x_values, T = positions_x.shape
+
+        p_theta = p_theta_distribution[np.repeat(np.arange(no_policies), no_x_values * T),
+                                       np.tile(times_t - 1, len(positions_x.flatten()) // len(times_t)),
+                                       positions_x.flatten() + T - 1]  # uses advanced indexing
+        p_theta = p_theta.reshape(np.shape(positions_x))
+
+        # calculate reward
+        reward = np.where(actions_a == 1,
+                          log_weight - np.log(p_theta) + np.log(prob_step_up),
+                          log_weight - np.log(1 - p_theta) + np.log(1 - prob_step_up))
+
+        return reward
 

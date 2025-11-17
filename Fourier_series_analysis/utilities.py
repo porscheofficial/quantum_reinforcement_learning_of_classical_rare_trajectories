@@ -192,7 +192,7 @@ def save_obj(obj, file_name: str) -> None:
         logger.info(f"Object cannot be saved in {file_name} due to PicklingError.")
 
 
-def load_and_restore_obj(class_type, file_name: str, all_params_dict: dict):
+def load_and_restore_obj(class_type, file_name: str, all_params_dict: dict, check_params_consistency: bool = True):
     """
     Load all attributes of an instance of class cls from a file with name file_name,
     create a new instance of class cls, and update its attributes accordingly.
@@ -219,6 +219,9 @@ def load_and_restore_obj(class_type, file_name: str, all_params_dict: dict):
             attributes[key] = value.item()
 
     obj.__dict__.update(attributes)
+
+    if not check_params_consistency:
+        return obj
 
     if not isinstance(obj, ConsistentParametersClass):
         error_message = (f"Class {class_type} must inherit from class ConsistentParametersClass to ensure that its "
